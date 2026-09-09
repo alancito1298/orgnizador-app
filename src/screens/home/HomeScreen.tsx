@@ -11,12 +11,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { apiFetch } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS, RADIUS, SPACING } from '../../theme';
+import ModalCrearCurso from '../../components/cursos/ModalCrearCurso';
 import type { AppStackParamList } from '../../../navigation/AppNavigator';
 
 type Nav = NativeStackNavigationProp<AppStackParamList>;
@@ -43,10 +44,32 @@ function iconoPorMateria(m: string): keyof typeof Ionicons.glyphMap {
   return 'school-outline';
 }
 
-function formatAnio(anio: string): string {
-  const n = parseInt(anio, 10);
-  const nombres: Record<number,string> = {1:'1er Año',2:'2do Año',3:'3er Año',4:'4to Año',5:'5to Año',6:'6to Año',7:'7mo Año'};
-  return isNaN(n) ? anio : (nombres[n] || `${n}° Año`);
+function formatAnio(anio: string | undefined | null): string {
+  if (!anio) return '';
+  const str = String(anio).trim();
+  if (str.includes('°')) return str;
+  const match = str.match(/^(\d+)\s*(.*)$/);
+  if (match) {
+    const num = match[1];
+    let resto = match[2].trim();
+    resto = resto.replace(/^(er|do|ro|to|mo|vo|no|ero)\b/i, '').trim();
+    if (!resto || /^(a[ñn]o|grado)$/i.test(resto)) {
+      return `${num}°`;
+    }
+    return `${num}° ${resto}`;
+  }
+  return `${str}°`;
+}
+
+function normalizarDia(dia: string | null | undefined): string {
+  if (!dia) return '';
+  const clean = dia.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (clean.startsWith('lun')) return 'Lunes';
+  if (clean.startsWith('mar')) return 'Martes';
+  if (clean.startsWith('mie')) return 'Miercoles';
+  if (clean.startsWith('jue')) return 'Jueves';
+  if (clean.startsWith('vie')) return 'Viernes';
+  return dia.trim();
 }
 
 // ── Almanaque widget (fiel al web) ─────────────────────────────────────────
@@ -79,7 +102,7 @@ function Almanaque() {
 
 const al = StyleSheet.create({
   wrap: {
-    width: 72, borderRadius: RADIUS.lg, overflow: 'hidden',
+    width: 74, borderRadius: RADIUS.lg, overflow: 'hidden',
     backgroundColor: '#fff',
     shadowColor: '#7c3aed', shadowOffset:{width:0,height:3}, shadowOpacity:0.15, shadowRadius:8, elevation:4,
     borderWidth:1, borderColor:'rgba(124,58,237,0.12)',
@@ -87,11 +110,11 @@ const al = StyleSheet.create({
   head: { backgroundColor: COLORS.accent, paddingBottom: 4, paddingTop: 6, alignItems:'center' },
   anillasRow: { flexDirection:'row', justifyContent:'space-around', width:'100%', paddingHorizontal:12, marginBottom:3 },
   anilla: { width:6, height:6, borderRadius:3, backgroundColor:'rgba(255,255,255,0.6)' },
-  mes: { color:'#fff', fontSize:10, fontWeight:'800', letterSpacing:2, lineHeight:12 },
+  mes: { color:'#fff', fontSize:11, fontWeight:'800', letterSpacing:2, lineHeight:13 },
   body: { backgroundColor:'#fff', alignItems:'center', paddingVertical:8, gap:1 },
   diaNum: { fontSize:28, fontWeight:'800', color: COLORS.onSurface, lineHeight:30, letterSpacing:-1 },
-  diaNombre: { fontSize:9, fontWeight:'800', color: COLORS.accent, letterSpacing:1 },
-  anioTxt: { fontSize:9, fontWeight:'600', color: COLORS.secondary },
+  diaNombre: { fontSize:10, fontWeight:'800', color: COLORS.accent, letterSpacing:0.8 },
+  anioTxt: { fontSize:10, fontWeight:'600', color: COLORS.secondary },
 });
 
 // ── Sticker de actividad (carrusel horizontal, fiel al web) ────────────────
@@ -101,7 +124,7 @@ function StickerActividad({ act, index, onPress }: { act: ActividadHoy; index: n
     <TouchableOpacity style={[sk.card, { borderLeftColor: borderColor }]} onPress={onPress} activeOpacity={0.85}>
       <View style={sk.topRow}>
         <View style={sk.horaBox}>
-          <Ionicons name="time-outline" size={11} color={COLORS.accent} />
+          <Ionicons name="time-outline" size={12} color={COLORS.accent} />
           <Text style={sk.horaText}>{act.hora}</Text>
         </View>
         {act.curso ? (
@@ -114,14 +137,14 @@ function StickerActividad({ act, index, onPress }: { act: ActividadHoy; index: n
       <Text style={sk.materia} numberOfLines={1}>{act.materia}</Text>
       {act.escuela ? (
         <View style={sk.escuelaRow}>
-          <Ionicons name="business-outline" size={11} color={COLORS.secondary} />
+          <Ionicons name="business-outline" size={12} color={COLORS.secondary} />
           <Text style={sk.escuela} numberOfLines={1}>{act.escuela}</Text>
         </View>
       ) : null}
 
       <TouchableOpacity style={sk.btn} onPress={onPress} activeOpacity={0.8}>
         <Text style={sk.btnText}>Ir al curso</Text>
-        <Ionicons name="arrow-forward" size={11} color={COLORS.accent} />
+        <Ionicons name="arrow-forward" size={12} color={COLORS.accent} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -137,25 +160,25 @@ const sk = StyleSheet.create({
   },
   topRow: { flexDirection:'row', alignItems:'center', justifyContent:'space-between' },
   horaBox: { flexDirection:'row', alignItems:'center', gap:3 },
-  horaText: { fontSize:11, fontWeight:'800', color: COLORS.accent },
+  horaText: { fontSize:12, fontWeight:'800', color: COLORS.accent },
   cursoBadge: {
-    backgroundColor:'rgba(124,58,237,0.1)', borderRadius:6,
-    paddingHorizontal:8, paddingVertical:2, maxWidth:90,
+    backgroundColor: '#ede9fe', borderRadius: RADIUS.sm,
+    paddingHorizontal: 8, paddingVertical: 3, maxWidth: 110,
   },
-  cursoText: { fontSize:10, fontWeight:'800', color: COLORS.accent },
-  materia: { fontSize:13, fontWeight:'800', color: COLORS.onSurface, textTransform:'uppercase', letterSpacing:0.3 },
+  cursoText: { fontSize: 13, fontWeight: '800', color: COLORS.accent },
+  materia: { fontSize:14, fontWeight:'800', color: COLORS.onSurface, textTransform:'uppercase', letterSpacing:0.3 },
   escuelaRow: { flexDirection:'row', alignItems:'center', gap:4 },
-  escuela: { fontSize:11, color: COLORS.secondary, fontWeight:'500', flex:1 },
+  escuela: { fontSize:12, color: COLORS.secondary, fontWeight:'500', flex:1 },
   btn: {
     flexDirection:'row', alignItems:'center', justifyContent:'center', gap:4,
     backgroundColor:'#fff', borderRadius: RADIUS.md, paddingVertical:7,
     shadowColor:'#000', shadowOffset:{width:0,height:1}, shadowOpacity:0.05, shadowRadius:3, elevation:1,
     marginTop:2,
   },
-  btnText: { fontSize:10, fontWeight:'800', color: COLORS.accent, textTransform:'uppercase', letterSpacing:0.5 },
+  btnText: { fontSize:11, fontWeight:'800', color: COLORS.accent, textTransform:'uppercase', letterSpacing:0.5 },
 });
 
-// ── Card de Curso (grid 2 columnas, fiel al web) ───────────────────────────
+// ── Card de Curso (grid 2 columnas) ─────────────────────────────────────────
 function CursoCard({ curso, onPress }: { curso: Curso; onPress: () => void }) {
   return (
     <TouchableOpacity style={cc.card} onPress={onPress} activeOpacity={0.85}>
@@ -169,36 +192,136 @@ function CursoCard({ curso, onPress }: { curso: Curso; onPress: () => void }) {
       </View>
       <View style={cc.info}>
         <Text style={cc.materia} numberOfLines={1}>{curso.materia}</Text>
-        <View style={cc.escuelaRow}>
-          <Ionicons name="business-outline" size={12} color={COLORS.secondary} />
-          <Text style={cc.escuela} numberOfLines={1}>{curso.escuela}</Text>
-        </View>
+        {curso.escuela ? (
+          <View style={cc.escuelaRow}>
+            <Ionicons name="business-outline" size={12} color={COLORS.secondary} />
+            <Text style={cc.escuela} numberOfLines={1}>{curso.escuela}</Text>
+          </View>
+        ) : null}
       </View>
+    </TouchableOpacity>
+  );
+}
+
+// ── Card "+ Agregar nuevo" (cuarto elemento del grid) ──────────────────────
+function AgregarNuevoCard({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity style={cc.agregarCard} onPress={onPress} activeOpacity={0.85}>
+      <View style={cc.agregarIconBox}>
+        <Ionicons name="add" size={24} color={COLORS.accent} />
+      </View>
+      <Text style={cc.agregarTitle}>+ Agregar nuevo</Text>
+      <Text style={cc.agregarSub}>Crear un curso</Text>
     </TouchableOpacity>
   );
 }
 
 const cc = StyleSheet.create({
   card: {
-    flex:1, backgroundColor:'#f5f3ff', borderRadius: RADIUS.xl, padding: SPACING.md,
+    width: '48.5%',
+    backgroundColor: '#f5f3ff',
+    borderRadius: RADIUS.xl,
+    padding: SPACING.md,
+    justifyContent: 'space-between',
+    minHeight: 115,
     gap: SPACING.sm,
-    shadowColor:'#000', shadowOffset:{width:0,height:2}, shadowOpacity:0.07, shadowRadius:8, elevation:3,
-    borderWidth:1, borderColor:'rgba(124,58,237,0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.1)',
   },
-  topRow: { flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between' },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
   iconBox: {
-    width:40, height:40, borderRadius: RADIUS.lg,
-    backgroundColor:'rgba(124,58,237,0.1)', alignItems:'center', justifyContent:'center',
+    width: 38,
+    height: 38,
+    borderRadius: RADIUS.md,
+    backgroundColor: 'rgba(124,58,237,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   anioBadge: {
-    backgroundColor:'rgba(124,58,237,0.1)', borderRadius:6,
-    paddingHorizontal:8, paddingVertical:2, maxWidth:80,
+    backgroundColor: '#ede9fe',
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  anioText: { fontSize:10, fontWeight:'800', color: COLORS.accent },
-  info: { gap:4 },
-  materia: { fontSize:13, fontWeight:'800', color: COLORS.onSurface },
-  escuelaRow: { flexDirection:'row', alignItems:'center', gap:4 },
-  escuela: { fontSize:11, color: COLORS.secondary, fontWeight:'500', flex:1 },
+  anioText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: COLORS.accent,
+    letterSpacing: 0.3,
+  },
+  info: {
+    gap: 3,
+  },
+  materia: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+    textTransform: 'uppercase',
+  },
+  escuelaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  escuela: {
+    fontSize: 12,
+    color: COLORS.secondary,
+    fontWeight: '500',
+    flex: 1,
+  },
+
+  // Card "+ Agregar nuevo"
+  agregarCard: {
+    width: '48.5%',
+    backgroundColor: '#ffffff',
+    borderRadius: RADIUS.xl,
+    padding: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 115,
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: 'rgba(124,58,237,0.35)',
+    borderStyle: 'dashed',
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  agregarIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  agregarTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: COLORS.accent,
+    textAlign: 'center',
+  },
+  agregarSub: {
+    fontSize: 11,
+    color: COLORS.secondary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 });
 
 // ── Card de menú de navegación (fiel al web: ícono + label en fila) ────────
@@ -238,6 +361,7 @@ export default function HomeScreen() {
   const [actividadesHoy, setActividadesHoy] = useState<ActividadHoy[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [modalCrear, setModalCrear] = useState(false);
 
   const hoy = new Date();
   const diaHoyKey = DIAS_MAP[hoy.getDay()];
@@ -254,11 +378,16 @@ export default function HomeScreen() {
 
   const fetchAll = useCallback(async () => {
     try {
+      console.log('[HomeScreen] fetchAll starting...');
       const [cursosRes, agendaRes, horariosRes] = await Promise.allSettled([
         apiFetch<Curso[]>('/cursos', { auth: true }),
         apiFetch<AgendaItem[]>('/agenda', { auth: true }),
         apiFetch<any[]>('/horarios', { auth: true }),
       ]);
+
+      console.log('[HomeScreen] cursosRes status:', cursosRes.status, cursosRes.status === 'fulfilled' ? cursosRes.value?.length : (cursosRes as any).reason);
+      console.log('[HomeScreen] agendaRes status:', agendaRes.status, agendaRes.status === 'fulfilled' ? agendaRes.value?.length : (agendaRes as any).reason);
+      console.log('[HomeScreen] horariosRes status:', horariosRes.status, horariosRes.status === 'fulfilled' ? horariosRes.value?.length : (horariosRes as any).reason);
 
       const cursosList = cursosRes.status === 'fulfilled' ? cursosRes.value : [];
       setCursos(cursosList);
@@ -272,15 +401,27 @@ export default function HomeScreen() {
       }
 
       if (horariosRes.status === 'fulfilled' && diaHoyKey) {
-        const deHoy = horariosRes.value.filter((h: any) => h.dia === diaHoyKey);
+        const rawHorarios = Array.isArray(horariosRes.value) ? horariosRes.value : [];
+        const deHoy = rawHorarios.filter((h: any) => normalizarDia(h.dia) === diaHoyKey);
         const parseadas: ActividadHoy[] = deHoy.map((h: any) => {
           let materia='', cursoTxt='', escuela='', cursoId: number|null=null;
           if (h.descripcion) {
             try {
               const p = JSON.parse(h.descripcion);
-              materia = p.materia || ''; cursoTxt = p.curso || '';
-              escuela = p.escuela || ''; cursoId = p.cursoId ? Number(p.cursoId) : null;
-            } catch { materia = h.descripcion; }
+              if (typeof p === 'object' && p !== null) {
+                materia = p.materia || ''; cursoTxt = p.curso || '';
+                escuela = p.escuela || ''; cursoId = p.cursoId ? Number(p.cursoId) : null;
+              }
+            } catch {
+              const partes = String(h.descripcion).split(/\r?\n| - | — /);
+              if (partes.length >= 2) {
+                materia = partes[0].trim();
+                cursoTxt = partes[1].trim();
+                escuela = partes.slice(2).join(' ').trim();
+              } else {
+                materia = String(h.descripcion).trim();
+              }
+            }
           }
           // Buscar cursoId por nombre si no viene
           if (!cursoId && materia) {
@@ -298,7 +439,11 @@ export default function HomeScreen() {
     finally { setLoading(false); setRefreshing(false); }
   }, [diaHoyKey, currentMonth, currentYear]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchAll();
+    }, [fetchAll])
+  );
   const onRefresh = () => { setRefreshing(true); fetchAll(); };
 
   if (loading) {
@@ -313,15 +458,28 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />}
       >
-        {/* ── HEADER: Saludo + Almanaque ── */}
+        {/* ── HEADER: Saludo + Perfil + Almanaque ── */}
         <View style={s.headerRow}>
           <View style={s.headerLeft}>
-            <Text style={s.saludo}>Hola {primerNombre}</Text>
-            <View style={s.anioRow}>
-              <Text style={s.anioText}>Año escolar: {anioEscolar}</Text>
-              <View style={s.encursoBadge}>
-                <View style={s.greenDot} />
-                <Text style={s.encursoText}>En curso</Text>
+            <View style={s.saludoRow}>
+              <TouchableOpacity
+                style={s.avatarBtn}
+                onPress={() => navigation.navigate('Perfil')}
+                activeOpacity={0.8}
+              >
+                <Text style={s.avatarInitials}>
+                  {((docente?.nombre?.[0] || 'D') + (docente?.apellido?.[0] || '')).toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={s.saludo} numberOfLines={1}>Hola {primerNombre}</Text>
+                <View style={s.anioRow}>
+                  <Text style={s.anioText}>Año escolar: {anioEscolar}</Text>
+                  <View style={s.encursoBadge}>
+                    <View style={s.greenDot} />
+                    <Text style={s.encursoText}>En curso</Text>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
@@ -385,10 +543,11 @@ export default function HomeScreen() {
             <NavMenuItem icon="school-outline"    label="Cursos"          onPress={() => navigation.navigate('Cursos')} />
             <NavMenuItem icon="document-text-outline" label="Planificaciones" onPress={() => navigation.navigate('Cursos')} />
             <NavMenuItem icon="time-outline"      label="Horarios"        onPress={() => navigation.navigate('Horario')} />
+            <NavMenuItem icon="person-circle-outline" label="Mi Perfil"   onPress={() => navigation.navigate('Perfil')} />
           </View>
         </View>
 
-        {/* ── MIS CURSOS (Grid 2 columnas) ── */}
+        {/* ── MIS CURSOS (Grid 2 columnas con "+ Ver todos" como 3er elemento) ── */}
         <View style={s.section}>
           <View style={s.sectionTitleRow}>
             <Text style={s.sectionTitle}>MIS CURSOS</Text>
@@ -403,19 +562,20 @@ export default function HomeScreen() {
             <View style={s.emptyCard}>
               <Ionicons name="school-outline" size={28} color={COLORS.secondary} />
               <Text style={s.emptyText}>Aún no tenés cursos creados.</Text>
-              <TouchableOpacity style={s.crearBtn} onPress={() => navigation.navigate('Cursos')}>
+              <TouchableOpacity style={s.crearBtn} onPress={() => setModalCrear(true)}>
                 <Text style={s.crearBtnText}>+ Crear Curso</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={s.cursosGrid}>
-              {cursos.slice(0, 4).map((curso) => (
+              {cursos.slice(0, 3).map((curso) => (
                 <CursoCard
                   key={curso.id}
                   curso={curso}
                   onPress={() => navigation.navigate('CursoDetalle', { cursoId: curso.id, curso })}
                 />
               ))}
+              <AgregarNuevoCard onPress={() => setModalCrear(true)} />
             </View>
           )}
         </View>
@@ -465,6 +625,15 @@ export default function HomeScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <ModalCrearCurso
+        visible={modalCrear}
+        onClose={() => setModalCrear(false)}
+        onCreado={(nuevoCurso) => {
+          setCursos((prev) => [nuevoCurso, ...prev]);
+          fetchAll();
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -478,7 +647,28 @@ const s = StyleSheet.create({
   // Header
   headerRow: { flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between', marginBottom: SPACING.xl },
   headerLeft: { flex:1, gap: 6 },
-  saludo: { fontSize:26, fontWeight:'800', color: COLORS.onSurface, letterSpacing:-0.5 },
+  saludoRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  avatarBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#c4b5fd',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 5,
+    elevation: 3,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  avatarInitials: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1e1b4b',
+  },
+  saludo: { fontSize:22, fontWeight:'800', color: COLORS.onSurface, letterSpacing:-0.5 },
   anioRow: { flexDirection:'row', alignItems:'center', gap: 8, flexWrap:'wrap' },
   anioText: { fontSize:12, color: COLORS.secondary, fontWeight:'500' },
   encursoBadge: {
@@ -523,8 +713,13 @@ const s = StyleSheet.create({
   sectionTitle: { fontSize:11, fontWeight:'800', color: COLORS.secondary, textTransform:'uppercase', letterSpacing:1 },
   verTodos: { fontSize:11, fontWeight:'800', color: COLORS.accent, textTransform:'uppercase', letterSpacing:0.5 },
 
-  // Grid cursos
-  cursosGrid: { flexDirection:'row', flexWrap:'wrap', gap: SPACING.sm },
+  // Grid cursos (2 columnas)
+  cursosGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'flex-start',
+  },
 
   // Botones empty state
   emptyCard: {

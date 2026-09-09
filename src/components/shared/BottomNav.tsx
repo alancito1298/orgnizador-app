@@ -108,6 +108,19 @@ export default function BottomNav({ activeRoute }: BottomNavProps) {
             )}
           </TouchableOpacity>
 
+          {/* 👤 Perfil */}
+          <TouchableOpacity
+            style={[pill.btn, activeRoute === 'Perfil' && pill.btnActive]}
+            onPress={() => navigation.navigate('Perfil' as never)}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={activeRoute === 'Perfil' ? 'person' : 'person-outline'}
+              size={22}
+              color={activeRoute === 'Perfil' ? COLORS.accent : COLORS.secondary}
+            />
+          </TouchableOpacity>
+
         </View>
       </View>
 

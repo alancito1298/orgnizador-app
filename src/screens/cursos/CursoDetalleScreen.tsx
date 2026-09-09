@@ -21,6 +21,7 @@ import AppInput from '../../components/ui/AppInput';
 import AppButton from '../../components/ui/AppButton';
 import ImportarAlumnosModal from '../../components/alumnos/ImportarAlumnosModal';
 import PasoConceptoModal from '../../components/alumnos/PasoConceptoModal';
+import ModalEditarHorariosCurso from '../../components/cursos/ModalEditarHorariosCurso';
 import {
   exportarAsistenciasCsv,
   exportarCalificacionesCsv,
@@ -66,12 +67,21 @@ interface Calificacion {
 type TabType = 'alumnos' | 'asistencia' | 'calificaciones' | 'planilla';
 type CriterioOrden = 'alfabetico-asc' | 'alfabetico-desc' | 'asistencia' | 'calificaciones';
 
-function formatAnio(anio: string): string {
-  const n = parseInt(anio, 10);
-  const nombres: Record<number, string> = {
-    1: '1er Año', 2: '2do Año', 3: '3er Año', 4: '4to Año', 5: '5to Año', 6: '6to Año', 7: '7mo Año'
-  };
-  return isNaN(n) ? anio : (nombres[n] || `${n}° Año`);
+function formatAnio(anio: string | undefined | null): string {
+  if (!anio) return '';
+  const str = String(anio).trim();
+  if (str.includes('°')) return str;
+  const match = str.match(/^(\d+)\s*(.*)$/);
+  if (match) {
+    const num = match[1];
+    let resto = match[2].trim();
+    resto = resto.replace(/^(er|do|ro|to|mo|vo|no|ero)\b/i, '').trim();
+    if (!resto || /^(a[ñn]o|grado)$/i.test(resto)) {
+      return `${num}°`;
+    }
+    return `${num}° ${resto}`;
+  }
+  return `${str}°`;
 }
 
 const ESTADOS_ASISTENCIA = [
@@ -124,10 +134,11 @@ export default function CursoDetalleScreen() {
   const [valorNota, setValorNota] = useState('');
   const [guardandoNota, setGuardandoNota] = useState(false);
 
-  // Modales de Importación, Concepto y Descargas
+  // Modales de Importación, Concepto, Descargas y Horarios
   const [importarModalAbierto, setImportarModalAbierto] = useState(false);
   const [conceptoModalAbierto, setConceptoModalAbierto] = useState(false);
   const [menuDescargasAbierto, setMenuDescargasAbierto] = useState(false);
+  const [modalEditarHorarios, setModalEditarHorarios] = useState(false);
 
   // Carga de datos
   const cargarDatos = useCallback(async () => {
@@ -458,6 +469,15 @@ export default function CursoDetalleScreen() {
                 )}
                 <Text style={s.headerMateriaText}>{curso?.materia?.toUpperCase()}</Text>
                 <Text style={s.headerEscuelaText}>— {curso?.escuela}</Text>
+                <TouchableOpacity
+                  onPress={() => setModalEditarHorarios(true)}
+                  style={s.headerEditHorariosBtn}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="time-outline" size={13} color={COLORS.accent} />
+                  <Text style={s.headerEditHorariosText}>Horarios</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -581,7 +601,22 @@ export default function CursoDetalleScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Fila 4: Botón Descargas / Exportación */}
+          {/* Fila 4: Editar Horarios y Días */}
+          <TouchableOpacity
+            style={s.horariosBtn}
+            onPress={() => setModalEditarHorarios(true)}
+            activeOpacity={0.85}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={s.horariosIconBox}>
+                <Ionicons name="time-outline" size={17} color={COLORS.accent} />
+              </View>
+              <Text style={s.horariosBtnText}>EDITAR HORARIOS Y DÍAS</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.accent} />
+          </TouchableOpacity>
+
+          {/* Fila 5: Botón Descargas / Exportación */}
           <TouchableOpacity
             style={s.descargasBtn}
             onPress={() => setMenuDescargasAbierto(true)}
@@ -1318,6 +1353,25 @@ export default function CursoDetalleScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ── MODAL EDITAR HORARIOS Y DÍAS DEL CURSO ── */}
+      <ModalEditarHorariosCurso
+        visible={modalEditarHorarios}
+        curso={
+          curso
+            ? {
+                id: curso.id,
+                escuela: curso.escuela,
+                anio: curso.anio,
+                materia: curso.materia,
+              }
+            : null
+        }
+        onClose={() => setModalEditarHorarios(false)}
+        onGuardado={() => {
+          cargarDatos();
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -1372,13 +1426,31 @@ const s = StyleSheet.create({
   headerSubRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   headerAnioBadge: {
     backgroundColor: '#ede9fe',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.18)',
   },
-  headerAnioText: { fontSize: 10, fontWeight: '800', color: '#5b21b6', textTransform: 'uppercase' },
+  headerAnioText: { fontSize: 13, fontWeight: '900', color: '#5b21b6', textTransform: 'uppercase' },
   headerMateriaText: { fontSize: 13, fontWeight: '800', color: COLORS.onSurface },
   headerEscuelaText: { fontSize: 12, color: COLORS.secondary, fontWeight: '500' },
+  headerEditHorariosBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#ede9fe',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.2)',
+  },
+  headerEditHorariosText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.accent,
+  },
   headerDivider: { height: 1, backgroundColor: 'rgba(124,58,237,0.08)' },
   headerBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
   anioEscolarRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -1503,6 +1575,37 @@ const s = StyleSheet.create({
     elevation: 1,
   },
   accionTileText: { fontSize: 11, fontWeight: '800', color: COLORS.accent, letterSpacing: 0.2 },
+
+  horariosBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f5f3ff',
+    borderRadius: RADIUS.lg,
+    paddingVertical: 10,
+    paddingHorizontal: SPACING.md,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.22)',
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  horariosIconBox: {
+    width: 26,
+    height: 26,
+    borderRadius: RADIUS.sm,
+    backgroundColor: 'rgba(124,58,237,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  horariosBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.accent,
+    letterSpacing: 0.5,
+  },
 
   descargasBtn: {
     flexDirection: 'row',

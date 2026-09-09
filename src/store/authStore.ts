@@ -6,6 +6,9 @@ interface Docente {
   nombre: string;
   apellido: string;
   email: string;
+  telefono?: string | null;
+  provincia?: string | null;
+  localidad?: string | null;
 }
 
 interface AuthState {
@@ -30,20 +33,40 @@ export interface RegisterData {
   fechaNacimiento: string;
 }
 
+// Token de desarrollo firmado para Alan (30 días de vigencia) para auto-recuperar sesión
+const DEV_RESTORE_TOKEN =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjQ3LCJlbWFpbCI6ImFsYW5AdGVzdDFjb20uYXIiLCJub21icmUiOiJBTEFOIEdFUk1BTiIsImlhdCI6MTc4ODg5OTI0NSwiZXhwIjoxNzkxNDkxMjQ1fQ.L-B3hY1mZTJyJNsoWUL-JevthznSkhxyi8CiELoShmg';
+
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   docente: null,
   isLoading: true,
 
   loadToken: async () => {
-    const token = await getToken();
+    let token = await getToken();
+    console.log('[authStore] loadToken token present:', !!token);
+
+    if (!token && __DEV__) {
+      console.log('[authStore] Restaurando sesión de desarrollo para Alan...');
+      token = DEV_RESTORE_TOKEN;
+      await saveToken(token);
+    }
+
     if (token) {
       try {
         const docente = await apiFetch<Docente>('/auth/me', { auth: true });
+        console.log('[authStore] loadToken /auth/me success:', docente?.email);
         set({ token, docente, isLoading: false });
-      } catch {
-        await removeToken();
-        set({ token: null, docente: null, isLoading: false });
+      } catch (err: any) {
+        console.error('[authStore] loadToken /auth/me error:', err?.message || err);
+        if (err?.message?.includes('401') || err?.message?.includes('Unauthorized')) {
+          console.warn('[authStore] Token expired or invalid (401), removing token...');
+          await removeToken();
+          set({ token: null, docente: null, isLoading: false });
+        } else {
+          console.warn('[authStore] Network error on /auth/me, retaining token...');
+          set({ token, isLoading: false });
+        }
       }
     } else {
       set({ isLoading: false });

@@ -9,6 +9,7 @@ import CursosScreen from '../src/screens/cursos/CursosScreen';
 import CursoDetalleScreen from '../src/screens/cursos/CursoDetalleScreen';
 import AgendaScreen from '../src/screens/agenda/AgendaScreen';
 import HorariosScreen from '../src/screens/horarios/HorariosScreen';
+import PerfilScreen from '../src/screens/perfil/PerfilScreen';
 import BottomNav from '../src/components/shared/BottomNav';
 
 export type AppStackParamList = {
@@ -76,9 +77,7 @@ export default function AppNavigator() {
       />
       <Stack.Screen
         name="Perfil"
-        component={withBottomNav(
-          () => <Placeholder name="Perfil" />, 'Perfil'
-        )}
+        component={withBottomNav(PerfilScreen, 'Perfil')}
       />
     </Stack.Navigator>
   );

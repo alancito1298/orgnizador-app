@@ -31,8 +31,11 @@ export async function apiFetch<T = unknown>(
 
   if (auth) {
     const token = await getToken();
+    console.log(`[apiFetch] ${options.method || 'GET'} ${path} - token present:`, !!token);
     if (token) {
       defaultHeaders['Authorization'] = `Bearer ${token}`;
+    } else {
+      console.warn(`[apiFetch] ${path} - WARNING: auth=true but NO TOKEN in SecureStore!`);
     }
   }
 
@@ -41,12 +44,15 @@ export async function apiFetch<T = unknown>(
     headers: defaultHeaders,
   });
 
+  console.log(`[apiFetch] ${options.method || 'GET'} ${path} - status:`, res.status);
+
   if (!res.ok) {
     const errData = await res.json().catch(() => null);
     const message =
       errData?.message ??
       (Array.isArray(errData?.message) ? errData.message[0] : null) ??
       `Error ${res.status}`;
+    console.error(`[apiFetch] ${path} ERROR:`, res.status, message);
     throw new Error(Array.isArray(message) ? message[0] : message);
   }
 
