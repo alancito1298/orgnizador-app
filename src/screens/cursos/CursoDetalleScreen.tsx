@@ -27,7 +27,7 @@ import {
   exportarCalificacionesCsv,
   exportarInformePedagogico,
 } from '../../utils/exportUtils';
-import { COLORS, RADIUS, SPACING } from '../../theme';
+import { COLORS, RADIUS, SPACING, NEU } from '../../theme';
 import type { AppStackParamList } from '../../../navigation/AppNavigator';
 
 type Nav = NativeStackNavigationProp<AppStackParamList>;
@@ -66,6 +66,19 @@ interface Calificacion {
 
 type TabType = 'alumnos' | 'asistencia' | 'calificaciones' | 'planilla';
 type CriterioOrden = 'alfabetico-asc' | 'alfabetico-desc' | 'asistencia' | 'calificaciones';
+
+const formatearTipoEvaluacion = (tipo: string) => {
+  switch (tipo) {
+    case 'trabajo_practico':
+      return 'TP';
+    case 'Examen':
+      return 'Examen';
+    case 'final':
+      return 'Final';
+    default:
+      return tipo || 'Nota';
+  }
+};
 
 function formatAnio(anio: string | undefined | null): string {
   if (!anio) return '';
@@ -271,6 +284,224 @@ export default function CursoDetalleScreen() {
     if (hoy.getDay() >= 1 && hoy.getDay() <= 5) return 'pendiente';
     return 'sin_clases';
   }, [asistencias, hoyStr]);
+
+  // ── Estados específicos para la Planilla Integral (fiel al web PlanillaCursoClient) ──
+  const [trimestrePlanilla, setTrimestrePlanilla] = useState<number>(1);
+  const [busquedaPlanilla, setBusquedaPlanilla] = useState('');
+  const [ordenPlanilla, setOrdenPlanilla] = useState<'apellido' | 'asistencia' | 'promedio'>('apellido');
+  const [filtroEstadoPlanilla, setFiltroEstadoPlanilla] = useState<'todos' | 'promocionados' | 'riesgo'>('todos');
+  const [descargandoExcel, setDescargandoExcel] = useState(false);
+
+  // Columnas de evaluaciones para la planilla (fiel al web)
+  const columnasEvaluacionesTrimestre = useMemo(() => {
+    const colsMap = new Map<string, { tipo: string; trimestre: string; fecha: string }>();
+
+    calificaciones.forEach((nota) => {
+      const trimMatch = trimestrePlanilla === 4 || Number(nota.trimestre) === trimestrePlanilla;
+      if (trimMatch) {
+        const fechaFormat = nota.fecha ? nota.fecha.split('T')[0] : '';
+        const key = `${nota.tipo}||${nota.trimestre}||${fechaFormat}`;
+        if (!colsMap.has(key)) {
+          colsMap.set(key, {
+            tipo: nota.tipo,
+            trimestre: String(nota.trimestre),
+            fecha: fechaFormat,
+          });
+        }
+      }
+    });
+
+    return [...colsMap.values()].sort((a, b) => {
+      if (a.trimestre !== b.trimestre) return Number(a.trimestre) - Number(b.trimestre);
+      return a.fecha.localeCompare(b.fecha);
+    });
+  }, [calificaciones, trimestrePlanilla]);
+
+  // Datos procesados para la planilla integral
+  const planillaProcesada = useMemo(() => {
+    return inscripciones.map((insc) => {
+      const alum = insc.alumno;
+
+      const asistenciasAlumno = asistencias.filter((a) => {
+        if (a.alumnoCursoId !== insc.id) return false;
+        if (trimestrePlanilla === 4) return true;
+        const m = new Date(a.fecha.split('T')[0]).getMonth() + 1;
+        let trimCalculado = 1;
+        if (m >= 6 && m <= 8) trimCalculado = 2;
+        else if (m >= 9) trimCalculado = 3;
+        return (a.trimestre ? Number(a.trimestre) === trimestrePlanilla : trimCalculado === trimestrePlanilla);
+      });
+
+      const totalClases = asistenciasAlumno.length;
+      const presentes = asistenciasAlumno.filter(
+        (a) => a.estado === 'presente_buen_concepto' || a.estado === 'presente'
+      ).length;
+      const presenteMalConcepto = asistenciasAlumno.filter((a) => a.estado === 'presente_mal_concepto').length;
+      const ausentes = asistenciasAlumno.filter((a) => a.estado === 'ausente').length;
+      const totalAsistieron = presentes + presenteMalConcepto;
+      const porcentajeAsistencia = totalClases > 0 ? Math.round((totalAsistieron / totalClases) * 100) : 0;
+
+      let conceptoEstado = 'Sin registros';
+      let conceptoColor = COLORS.secondary;
+      let conceptoBg = '#f3f4f6';
+      let conceptoIcon: keyof typeof Ionicons.glyphMap = 'help-circle-outline';
+
+      if (totalAsistieron > 0) {
+        const ratioMalConcepto = presenteMalConcepto / totalAsistieron;
+        if (ratioMalConcepto === 0 && presentes > 0) {
+          conceptoEstado = 'Excelente';
+          conceptoColor = '#047857';
+          conceptoBg = '#ecfdf5';
+          conceptoIcon = 'star';
+        } else if (ratioMalConcepto < 0.25) {
+          conceptoEstado = 'Muy Bueno';
+          conceptoColor = '#15803d';
+          conceptoBg = '#f0fdf4';
+          conceptoIcon = 'thumbs-up';
+        } else if (ratioMalConcepto < 0.5) {
+          conceptoEstado = 'Regular';
+          conceptoColor = '#b45309';
+          conceptoBg = '#fffbeb';
+          conceptoIcon = 'warning-outline';
+        } else {
+          conceptoEstado = 'A Mejorar';
+          conceptoColor = '#b91c1c';
+          conceptoBg = '#fef2f2';
+          conceptoIcon = 'alert-circle-outline';
+        }
+      }
+
+      const notasTrimestre: number[] = [];
+      const notasPorColumna: Record<string, number | null> = {};
+
+      columnasEvaluacionesTrimestre.forEach((col) => {
+        const key = `${col.tipo}||${col.trimestre}||${col.fecha}`;
+        const notaObj = calificaciones.find(
+          (n) =>
+            n.alumnoCursoId === insc.id &&
+            n.tipo === col.tipo &&
+            String(n.trimestre) === col.trimestre &&
+            n.fecha.split('T')[0] === col.fecha
+        );
+
+        if (notaObj && !isNaN(Number(notaObj.valor)) && Number(notaObj.valor) > 0) {
+          const val = Number(notaObj.valor);
+          notasPorColumna[key] = val;
+          notasTrimestre.push(val);
+        } else {
+          notasPorColumna[key] = null;
+        }
+      });
+
+      const promedioTrimestral =
+        notasTrimestre.length > 0
+          ? Math.round((notasTrimestre.reduce((a, b) => a + b, 0) / notasTrimestre.length) * 10) / 10
+          : null;
+
+      const notasT1 = calificaciones.filter((n) => n.alumnoCursoId === insc.id && Number(n.trimestre) === 1 && Number(n.valor) > 0).map((n) => Number(n.valor));
+      const notasT2 = calificaciones.filter((n) => n.alumnoCursoId === insc.id && Number(n.trimestre) === 2 && Number(n.valor) > 0).map((n) => Number(n.valor));
+      const notasT3 = calificaciones.filter((n) => n.alumnoCursoId === insc.id && Number(n.trimestre) === 3 && Number(n.valor) > 0).map((n) => Number(n.valor));
+
+      const promT1 = notasT1.length > 0 ? Math.round((notasT1.reduce((a, b) => a + b, 0) / notasT1.length) * 10) / 10 : null;
+      const promT2 = notasT2.length > 0 ? Math.round((notasT2.reduce((a, b) => a + b, 0) / notasT2.length) * 10) / 10 : null;
+      const promT3 = notasT3.length > 0 ? Math.round((notasT3.reduce((a, b) => a + b, 0) / notasT3.length) * 10) / 10 : null;
+
+      const promsDisponibles = [promT1, promT2, promT3].filter((p): p is number => p !== null);
+      const promedioFinalAnual =
+        promsDisponibles.length > 0
+          ? Math.round((promsDisponibles.reduce((a, b) => a + b, 0) / promsDisponibles.length) * 10) / 10
+          : null;
+
+      return {
+        insc,
+        alumnoId: alum.id,
+        nombre: alum.nombre,
+        apellido: alum.apellido,
+        dni: alum.dni,
+        totalClases,
+        presentes,
+        presenteMalConcepto,
+        ausentes,
+        porcentajeAsistencia,
+        conceptoEstado,
+        conceptoColor,
+        conceptoBg,
+        conceptoIcon,
+        notasPorColumna,
+        promedioTrimestral,
+        promT1,
+        promT2,
+        promT3,
+        promedioFinalAnual,
+      };
+    });
+  }, [inscripciones, asistencias, calificaciones, trimestrePlanilla, columnasEvaluacionesTrimestre]);
+
+  const planillaFiltradaYOrdenada = useMemo(() => {
+    let result = [...planillaProcesada];
+
+    if (busquedaPlanilla.trim()) {
+      const q = busquedaPlanilla.toLowerCase().trim();
+      result = result.filter(
+        (a) => a.nombre.toLowerCase().includes(q) || a.apellido.toLowerCase().includes(q) || (a.dni && a.dni.includes(q))
+      );
+    }
+
+    if (filtroEstadoPlanilla === 'promocionados') {
+      result = result.filter((a) => {
+        const p = trimestrePlanilla === 4 ? a.promedioFinalAnual : a.promedioTrimestral;
+        return p !== null ? p >= 6 : false;
+      });
+    } else if (filtroEstadoPlanilla === 'riesgo') {
+      result = result.filter((a) => {
+        const p = trimestrePlanilla === 4 ? a.promedioFinalAnual : a.promedioTrimestral;
+        return p !== null ? p < 6 : true;
+      });
+    }
+
+    if (ordenPlanilla === 'apellido') {
+      result.sort((a, b) => a.apellido.localeCompare(b.apellido));
+    } else if (ordenPlanilla === 'asistencia') {
+      result.sort((a, b) => b.porcentajeAsistencia - a.porcentajeAsistencia);
+    } else if (ordenPlanilla === 'promedio') {
+      result.sort((a, b) => {
+        const pa = trimestrePlanilla === 4 ? (a.promedioFinalAnual ?? -1) : (a.promedioTrimestral ?? -1);
+        const pb = trimestrePlanilla === 4 ? (b.promedioFinalAnual ?? -1) : (b.promedioTrimestral ?? -1);
+        return pb - pa;
+      });
+    }
+
+    return result;
+  }, [planillaProcesada, busquedaPlanilla, filtroEstadoPlanilla, ordenPlanilla, trimestrePlanilla]);
+
+  const handleExportarExcel = async () => {
+    if (!curso) return;
+    setDescargandoExcel(true);
+    try {
+      await exportarCalificacionesCsv(
+        { materia: curso.materia, anio: String(curso.anio), escuela: curso.escuela },
+        inscripciones,
+        calificaciones
+      );
+    } catch {
+      Alert.alert('Error', 'No se pudo exportar la planilla.');
+    } finally {
+      setDescargandoExcel(false);
+    }
+  };
+
+  const handleExportarAsistencias = async () => {
+    if (!curso) return;
+    try {
+      await exportarAsistenciasCsv(
+        { materia: curso.materia, anio: String(curso.anio), escuela: curso.escuela },
+        inscripciones,
+        asistencias
+      );
+    } catch {
+      Alert.alert('Error', 'No se pudo exportar las asistencias.');
+    }
+  };
 
   // Guardar Alumno (Crear o Editar)
   const handleGuardarAlumno = async () => {
@@ -1023,43 +1254,419 @@ export default function CursoDetalleScreen() {
           </View>
         )}
 
-        {/* ── CONTENIDO: TAB 4 PLANILLA ── */}
+        {/* ── CONTENIDO: TAB 4 PLANILLA (Fiel al web PlanillaCursoClient) ── */}
         {activeTab === 'planilla' && (
           <View style={s.tabSection}>
-            <View style={s.planillaHeader}>
-              <Text style={s.planillaHeaderTitle}>RESUMEN GENERAL DEL CURSO</Text>
-              <Text style={s.planillaHeaderSub}>{inscripciones.length} Alumnos en total</Text>
+            {/* Encabezado */}
+            <View style={s.plHeadBox}>
+              <View style={s.plHeadTitleRow}>
+                <Ionicons name="grid-outline" size={20} color={COLORS.accent} />
+                <Text style={s.plHeadTitle}>Planilla de Seguimiento</Text>
+              </View>
+              <Text style={s.plHeadSub}>
+                Visualización integral de asistencia, concepto y notas por trimestre estilo planilla.
+              </Text>
             </View>
 
-            {inscripciones.map((insc, idx) => {
-              const stats = getStatsAlumno(insc.id);
-              return (
-                <View key={insc.id} style={s.planillaRowCard}>
-                  <View style={s.planillaOrderBox}>
-                    <Text style={s.planillaOrderText}>{idx + 1}</Text>
-                  </View>
-                  <View style={s.planillaInfo}>
-                    <Text style={s.planillaNombre}>
-                      {insc.alumno?.apellido}, {insc.alumno?.nombre}
-                    </Text>
-                    <View style={s.planillaCols}>
-                      <View style={s.planillaCol}>
-                        <Text style={s.pColLabel}>Asistencia</Text>
-                        <Text style={s.pColVal}>{stats.porcentaje !== null ? `${stats.porcentaje}%` : '-'}</Text>
-                        <Text style={s.pColSub}>{stats.presentes}/{stats.total} clases</Text>
+            {/* Pestañas de Selector de Trimestre */}
+            <View style={s.plTrimestresRow}>
+              {[1, 2, 3].map((t) => (
+                <TouchableOpacity
+                  key={t}
+                  style={[s.plTrimBtn, trimestrePlanilla === t && s.plTrimBtnActive]}
+                  onPress={() => setTrimestrePlanilla(t)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={13}
+                    color={trimestrePlanilla === t ? '#fff' : COLORS.accent}
+                  />
+                  <Text style={[s.plTrimBtnText, trimestrePlanilla === t && s.plTrimBtnTextActive]}>
+                    {t}° Trim
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={[s.plTrimBtn, trimestrePlanilla === 4 && s.plTrimBtnActive]}
+                onPress={() => setTrimestrePlanilla(4)}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="stats-chart-outline"
+                  size={13}
+                  color={trimestrePlanilla === 4 ? '#fff' : COLORS.accent}
+                />
+                <Text style={[s.plTrimBtnText, trimestrePlanilla === 4 && s.plTrimBtnTextActive]}>
+                  Anual
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Botones de Descarga / Exportación */}
+            <View style={s.plExportRow}>
+              <TouchableOpacity
+                style={s.plExportBtnExcel}
+                onPress={handleExportarExcel}
+                disabled={descargandoExcel}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="document-text-outline" size={15} color="#047857" />
+                <Text style={s.plExportBtnTextExcel}>
+                  {descargandoExcel ? 'Generando...' : 'Descargar Excel'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.plExportBtnPdf}
+                onPress={handleExportarAsistencias}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="calendar-outline" size={15} color="#4338ca" />
+                <Text style={s.plExportBtnTextPdf}>Descargar Asistencias</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Buscador y Filtros */}
+            <View style={s.plSearchBox}>
+              <Ionicons name="search-outline" size={16} color={COLORS.secondary} />
+              <TextInput
+                style={s.plSearchInput}
+                placeholder="Buscar estudiante en la planilla..."
+                placeholderTextColor={COLORS.secondary}
+                value={busquedaPlanilla}
+                onChangeText={setBusquedaPlanilla}
+              />
+              {busquedaPlanilla.length > 0 && (
+                <TouchableOpacity onPress={() => setBusquedaPlanilla('')}>
+                  <Ionicons name="close-circle" size={16} color={COLORS.secondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={s.plFiltrosRow}>
+              {/* Selector Orden */}
+              <View style={s.plFiltroPill}>
+                <Text style={s.plFiltroLabel}>ORDEN:</Text>
+                <TouchableOpacity
+                  style={[s.plFiltroBtn, ordenPlanilla === 'apellido' && s.plFiltroBtnActive]}
+                  onPress={() => setOrdenPlanilla('apellido')}
+                >
+                  <Text style={[s.plFiltroBtnText, ordenPlanilla === 'apellido' && s.plFiltroBtnTextActive]}>A-Z</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.plFiltroBtn, ordenPlanilla === 'asistencia' && s.plFiltroBtnActive]}
+                  onPress={() => setOrdenPlanilla('asistencia')}
+                >
+                  <Text style={[s.plFiltroBtnText, ordenPlanilla === 'asistencia' && s.plFiltroBtnTextActive]}>% Asist</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.plFiltroBtn, ordenPlanilla === 'promedio' && s.plFiltroBtnActive]}
+                  onPress={() => setOrdenPlanilla('promedio')}
+                >
+                  <Text style={[s.plFiltroBtnText, ordenPlanilla === 'promedio' && s.plFiltroBtnTextActive]}>Prom</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Selector Estado */}
+              <View style={s.plFiltroPill}>
+                <TouchableOpacity
+                  style={[s.plFiltroBtn, filtroEstadoPlanilla === 'todos' && s.plFiltroBtnActive]}
+                  onPress={() => setFiltroEstadoPlanilla('todos')}
+                >
+                  <Text style={[s.plFiltroBtnText, filtroEstadoPlanilla === 'todos' && s.plFiltroBtnTextActive]}>Todos</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.plFiltroBtn, filtroEstadoPlanilla === 'promocionados' && s.plFiltroBtnActive]}
+                  onPress={() => setFiltroEstadoPlanilla('promocionados')}
+                >
+                  <Text style={[s.plFiltroBtnText, filtroEstadoPlanilla === 'promocionados' && s.plFiltroBtnTextActive]}>≥ 6</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.plFiltroBtn, filtroEstadoPlanilla === 'riesgo' && s.plFiltroBtnActive]}
+                  onPress={() => setFiltroEstadoPlanilla('riesgo')}
+                >
+                  <Text style={[s.plFiltroBtnText, filtroEstadoPlanilla === 'riesgo' && s.plFiltroBtnTextActive]}>&lt; 6</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Planilla Tabla con Scroll Horizontal */}
+            {planillaFiltradaYOrdenada.length === 0 ? (
+              <View style={s.plEmptyCard}>
+                <Ionicons name="grid-outline" size={32} color={COLORS.secondary} />
+                <Text style={s.plEmptyText}>No se encontraron estudiantes en la planilla.</Text>
+              </View>
+            ) : (
+              <View style={s.plTableCard}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={true} nestedScrollEnabled={true}>
+                  <View>
+                    {/* Header Nivel 1 (Supercategorías) */}
+                    <View style={s.plHeaderRowCat}>
+                      <View style={[s.plThCat, { width: 170, backgroundColor: 'rgba(124,58,237,0.1)' }]}>
+                        <Text style={s.plThCatText}>1. Alumnos ({planillaFiltradaYOrdenada.length})</Text>
                       </View>
-                      <View style={s.planillaCol}>
-                        <Text style={s.pColLabel}>Promedio</Text>
-                        <Text style={[s.pColVal, { color: COLORS.accent }]}>
-                          {stats.promedio ? `${stats.promedio}/10` : '-'}
+                      <View style={[s.plThCat, { width: 190, backgroundColor: 'rgba(16,185,129,0.1)' }]}>
+                        <Text style={[s.plThCatText, { color: '#047857' }]}>
+                          2. Asistencia ({trimestrePlanilla === 4 ? 'Anual' : `${trimestrePlanilla}° Trim`})
                         </Text>
-                        <Text style={s.pColSub}>{stats.notas.length} notas</Text>
                       </View>
+                      <View style={[s.plThCat, { width: 130, backgroundColor: 'rgba(245,158,11,0.1)' }]}>
+                        <Text style={[s.plThCatText, { color: '#b45309' }]}>3. Concepto</Text>
+                      </View>
+                      {trimestrePlanilla < 4 ? (
+                        <>
+                          <View
+                            style={[
+                              s.plThCat,
+                              {
+                                width: Math.max(columnasEvaluacionesTrimestre.length * 64, 110),
+                                backgroundColor: 'rgba(99,102,241,0.1)',
+                              },
+                            ]}
+                          >
+                            <Text style={[s.plThCatText, { color: '#4338ca' }]}>
+                              4. Calificaciones ({columnasEvaluacionesTrimestre.length})
+                            </Text>
+                          </View>
+                          <View style={[s.plThCat, { width: 85, backgroundColor: 'rgba(124,58,237,0.15)' }]}>
+                            <Text style={[s.plThCatText, { color: COLORS.accent }]}>
+                              Prom. {trimestrePlanilla}°T
+                            </Text>
+                          </View>
+                        </>
+                      ) : (
+                        <>
+                          <View style={[s.plThCat, { width: 70, backgroundColor: 'rgba(124,58,237,0.08)' }]}>
+                            <Text style={s.plThCatText}>Prom 1°T</Text>
+                          </View>
+                          <View style={[s.plThCat, { width: 70, backgroundColor: 'rgba(124,58,237,0.08)' }]}>
+                            <Text style={s.plThCatText}>Prom 2°T</Text>
+                          </View>
+                          <View style={[s.plThCat, { width: 70, backgroundColor: 'rgba(124,58,237,0.08)' }]}>
+                            <Text style={s.plThCatText}>Prom 3°T</Text>
+                          </View>
+                          <View style={[s.plThCat, { width: 95, backgroundColor: COLORS.accent }]}>
+                            <Text style={[s.plThCatText, { color: '#fff' }]}>Final Anual</Text>
+                          </View>
+                        </>
+                      )}
                     </View>
+
+                    {/* Header Nivel 2 (Subcolumnas) */}
+                    <View style={s.plHeaderRowSub}>
+                      <View style={[s.plThSub, { width: 170 }]}>
+                        <Text style={s.plThSubText}>Estudiante</Text>
+                      </View>
+                      <View style={[s.plThSub, { width: 44 }]}>
+                        <Text style={[s.plThSubText, { color: '#047857' }]}>P</Text>
+                      </View>
+                      <View style={[s.plThSub, { width: 44 }]}>
+                        <Text style={[s.plThSubText, { color: '#b45309' }]}>PMC</Text>
+                      </View>
+                      <View style={[s.plThSub, { width: 44 }]}>
+                        <Text style={[s.plThSubText, { color: '#b91c1c' }]}>A</Text>
+                      </View>
+                      <View style={[s.plThSub, { width: 58 }]}>
+                        <Text style={[s.plThSubText, { color: '#047857' }]}>% Asist</Text>
+                      </View>
+                      <View style={[s.plThSub, { width: 130 }]}>
+                        <Text style={s.plThSubText}>Evaluación</Text>
+                      </View>
+
+                      {trimestrePlanilla < 4 ? (
+                        <>
+                          {columnasEvaluacionesTrimestre.length === 0 ? (
+                            <View style={[s.plThSub, { width: 110 }]}>
+                              <Text style={[s.plThSubText, { fontStyle: 'italic', color: COLORS.secondary }]}>
+                                Sin notas
+                              </Text>
+                            </View>
+                          ) : (
+                            columnasEvaluacionesTrimestre.map((col, cIdx) => (
+                              <View key={`pl-col-${cIdx}`} style={[s.plThSub, { width: 64 }]}>
+                                <Text style={[s.plThSubText, { color: COLORS.accent }]}>
+                                  {formatearTipoEvaluacion(col.tipo)}
+                                </Text>
+                                <Text style={s.plThDateText}>{col.fecha ? col.fecha.slice(5) : ''}</Text>
+                              </View>
+                            ))
+                          )}
+                          <View style={[s.plThSub, { width: 85 }]}>
+                            <Text style={[s.plThSubText, { color: COLORS.accent, fontWeight: '900' }]}>
+                              Nota Final
+                            </Text>
+                          </View>
+                        </>
+                      ) : (
+                        <>
+                          <View style={[s.plThSub, { width: 70 }]}>
+                            <Text style={s.plThSubText}>1° T</Text>
+                          </View>
+                          <View style={[s.plThSub, { width: 70 }]}>
+                            <Text style={s.plThSubText}>2° T</Text>
+                          </View>
+                          <View style={[s.plThSub, { width: 70 }]}>
+                            <Text style={s.plThSubText}>3° T</Text>
+                          </View>
+                          <View style={[s.plThSub, { width: 95 }]}>
+                            <Text style={[s.plThSubText, { color: COLORS.accent, fontWeight: '900' }]}>
+                              Promedio
+                            </Text>
+                          </View>
+                        </>
+                      )}
+                    </View>
+
+                    {/* Filas de Estudiantes */}
+                    {planillaFiltradaYOrdenada.map((item, rowIdx) => (
+                      <View
+                        key={item.insc.id}
+                        style={[s.plDataRow, rowIdx % 2 === 1 && { backgroundColor: 'rgba(245,243,255,0.45)' }]}
+                      >
+                        {/* Columna Alumno */}
+                        <TouchableOpacity
+                          style={[s.plTd, { width: 170, flexDirection: 'row', alignItems: 'center', gap: 6 }]}
+                          onPress={() => setPerfilAlumno({ insc: item.insc, stats: getStatsAlumno(item.insc.id) })}
+                          activeOpacity={0.7}
+                        >
+                          <View style={s.plAvatarSmall}>
+                            <Text style={s.plAvatarSmallText}>{item.apellido.charAt(0).toUpperCase()}</Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={s.plAlumnoNombre} numberOfLines={1}>
+                              {item.apellido}, {item.nombre}
+                            </Text>
+                            {item.dni ? <Text style={s.plAlumnoDni}>DNI: {item.dni}</Text> : null}
+                          </View>
+                        </TouchableOpacity>
+
+                        {/* Asistencia */}
+                        <View style={[s.plTd, { width: 44, alignItems: 'center', justifyContent: 'center' }]}>
+                          <Text style={[s.plTextBold, { color: '#047857' }]}>{item.presentes}</Text>
+                        </View>
+                        <View style={[s.plTd, { width: 44, alignItems: 'center', justifyContent: 'center' }]}>
+                          <Text style={[s.plTextBold, { color: '#b45309' }]}>{item.presenteMalConcepto}</Text>
+                        </View>
+                        <View style={[s.plTd, { width: 44, alignItems: 'center', justifyContent: 'center' }]}>
+                          <Text style={[s.plTextBold, { color: '#b91c1c' }]}>{item.ausentes}</Text>
+                        </View>
+                        <View style={[s.plTd, { width: 58, alignItems: 'center', justifyContent: 'center' }]}>
+                          <View
+                            style={[
+                              s.plPctBadge,
+                              { backgroundColor: item.porcentajeAsistencia >= 75 ? '#d1fae5' : '#fee2e2' },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                s.plPctBadgeText,
+                                { color: item.porcentajeAsistencia >= 75 ? '#065f46' : '#991b1b' },
+                              ]}
+                            >
+                              {item.porcentajeAsistencia}%
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Concepto */}
+                        <View style={[s.plTd, { width: 130, alignItems: 'center', justifyContent: 'center' }]}>
+                          <View style={[s.plConceptoBadge, { backgroundColor: item.conceptoBg }]}>
+                            <Ionicons name={item.conceptoIcon} size={11} color={item.conceptoColor} />
+                            <Text style={[s.plConceptoText, { color: item.conceptoColor }]}>
+                              {item.conceptoEstado}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Calificaciones */}
+                        {trimestrePlanilla < 4 ? (
+                          <>
+                            {columnasEvaluacionesTrimestre.length === 0 ? (
+                              <View style={[s.plTd, { width: 110, alignItems: 'center', justifyContent: 'center' }]}>
+                                <Text style={{ color: '#d1d5db' }}>-</Text>
+                              </View>
+                            ) : (
+                              columnasEvaluacionesTrimestre.map((col, cIdx) => {
+                                const key = `${col.tipo}||${col.trimestre}||${col.fecha}`;
+                                const val = item.notasPorColumna[key];
+                                return (
+                                  <View
+                                    key={`cell-nota-${cIdx}`}
+                                    style={[s.plTd, { width: 64, alignItems: 'center', justifyContent: 'center' }]}
+                                  >
+                                    {val !== null ? (
+                                      <View
+                                        style={[
+                                          s.plNotaBadge,
+                                          { backgroundColor: val >= 6 ? '#d1fae5' : '#fee2e2' },
+                                        ]}
+                                      >
+                                        <Text
+                                          style={[
+                                            s.plNotaText,
+                                            { color: val >= 6 ? '#065f46' : '#991b1b' },
+                                          ]}
+                                        >
+                                          {val}
+                                        </Text>
+                                      </View>
+                                    ) : (
+                                      <Text style={{ color: '#d1d5db', fontWeight: '700' }}>-</Text>
+                                    )}
+                                  </View>
+                                );
+                              })
+                            )}
+                            {/* Promedio Trimestral */}
+                            <View style={[s.plTd, { width: 85, alignItems: 'center', justifyContent: 'center' }]}>
+                              {item.promedioTrimestral !== null ? (
+                                <View
+                                  style={[
+                                    s.plPromBadge,
+                                    { backgroundColor: item.promedioTrimestral >= 6 ? '#059669' : '#dc2626' },
+                                  ]}
+                                >
+                                  <Text style={s.plPromBadgeText}>{item.promedioTrimestral}</Text>
+                                </View>
+                              ) : (
+                                <Text style={{ color: '#9ca3af', fontSize: 12 }}>-</Text>
+                              )}
+                            </View>
+                          </>
+                        ) : (
+                          <>
+                            {/* Consolidado Anual */}
+                            <View style={[s.plTd, { width: 70, alignItems: 'center', justifyContent: 'center' }]}>
+                              <Text style={s.plConsolidadoVal}>{item.promT1 !== null ? item.promT1 : '-'}</Text>
+                            </View>
+                            <View style={[s.plTd, { width: 70, alignItems: 'center', justifyContent: 'center' }]}>
+                              <Text style={s.plConsolidadoVal}>{item.promT2 !== null ? item.promT2 : '-'}</Text>
+                            </View>
+                            <View style={[s.plTd, { width: 70, alignItems: 'center', justifyContent: 'center' }]}>
+                              <Text style={s.plConsolidadoVal}>{item.promT3 !== null ? item.promT3 : '-'}</Text>
+                            </View>
+                            <View style={[s.plTd, { width: 95, alignItems: 'center', justifyContent: 'center' }]}>
+                              {item.promedioFinalAnual !== null ? (
+                                <View
+                                  style={[
+                                    s.plPromBadge,
+                                    { backgroundColor: item.promedioFinalAnual >= 6 ? '#059669' : '#dc2626' },
+                                  ]}
+                                >
+                                  <Text style={s.plPromBadgeText}>{item.promedioFinalAnual}</Text>
+                                </View>
+                              ) : (
+                                <Text style={{ color: '#9ca3af', fontSize: 12 }}>-</Text>
+                              )}
+                            </View>
+                          </>
+                        )}
+                      </View>
+                    ))}
                   </View>
-                </View>
-              );
-            })}
+                </ScrollView>
+              </View>
+            )}
           </View>
         )}
 
@@ -1958,36 +2565,212 @@ const s = StyleSheet.create({
   notaTipoLabel: { fontSize: 8, fontWeight: '700', color: '#5b21b6', textTransform: 'uppercase' },
   notaValorText: { fontSize: 12, fontWeight: '800', color: COLORS.onSurface },
 
-  // Planilla Tab
-  planillaHeader: { gap: 2 },
-  planillaHeaderTitle: { fontSize: 11, fontWeight: '800', color: COLORS.secondary, letterSpacing: 0.5 },
-  planillaHeaderSub: { fontSize: 10, color: COLORS.secondary },
-  planillaRowCard: {
+  // ── Planilla Estilo Web (Spreadsheet) ──
+  plHeadBox: { marginBottom: SPACING.md, gap: 4 },
+  plHeadTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  plHeadTitle: { fontSize: 16, fontWeight: '800', color: COLORS.accent, letterSpacing: -0.2 },
+  plHeadSub: { fontSize: 12, color: COLORS.secondary, fontWeight: '500', lineHeight: 17 },
+
+  plTrimestresRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: SPACING.sm,
+  },
+  plTrimBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 9,
     borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.1)',
-    gap: 10,
+    ...NEU.raisedCard,
   },
-  planillaOrderBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: '#ede9fe',
+  plTrimBtnActive: {
+    backgroundColor: COLORS.accent,
+    borderTopColor: COLORS.accent,
+    borderLeftColor: COLORS.accent,
+    borderBottomColor: COLORS.accent,
+    borderRightColor: COLORS.accent,
+  },
+  plTrimBtnText: { fontSize: 12, fontWeight: '700', color: COLORS.accent },
+  plTrimBtnTextActive: { color: '#ffffff', fontWeight: '800' },
+
+  plExportRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: SPACING.md,
+  },
+  plExportBtnExcel: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: RADIUS.lg,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
   },
-  planillaOrderText: { fontSize: 11, fontWeight: '800', color: COLORS.accent },
-  planillaInfo: { flex: 1, gap: 4 },
-  planillaNombre: { fontSize: 12, fontWeight: '800', color: COLORS.onSurface },
-  planillaCols: { flexDirection: 'row', gap: SPACING.lg },
-  planillaCol: { gap: 1 },
-  pColLabel: { fontSize: 9, color: COLORS.secondary, fontWeight: '600' },
-  pColVal: { fontSize: 13, fontWeight: '800', color: COLORS.onSurface },
-  pColSub: { fontSize: 8, color: COLORS.secondary },
+  plExportBtnTextExcel: { fontSize: 11, fontWeight: '800', color: '#047857' },
+  plExportBtnPdf: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: RADIUS.lg,
+    backgroundColor: '#eef2ff',
+    borderWidth: 1,
+    borderColor: '#c7d2fe',
+  },
+  plExportBtnTextPdf: { fontSize: 11, fontWeight: '800', color: '#4338ca' },
+
+  plSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+    marginBottom: SPACING.sm,
+    ...NEU.inset,
+  },
+  plSearchInput: { flex: 1, fontSize: 12, color: COLORS.onSurface, fontWeight: '600', padding: 0 },
+
+  plFiltrosRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: SPACING.md,
+  },
+  plFiltroPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: RADIUS.lg,
+    padding: 4,
+    ...NEU.inset,
+  },
+  plFiltroLabel: { fontSize: 9, fontWeight: '800', color: COLORS.secondary, paddingHorizontal: 4 },
+  plFiltroBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: RADIUS.sm,
+  },
+  plFiltroBtnActive: {
+    backgroundColor: COLORS.accent,
+  },
+  plFiltroBtnText: { fontSize: 10, fontWeight: '700', color: COLORS.secondary },
+  plFiltroBtnTextActive: { color: '#ffffff', fontWeight: '800' },
+
+  plEmptyCard: {
+    borderRadius: RADIUS.xl,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    gap: SPACING.sm,
+    ...NEU.inset,
+  },
+  plEmptyText: { fontSize: 12, color: COLORS.secondary, fontWeight: '600', textAlign: 'center' },
+
+  plTableCard: {
+    borderRadius: RADIUS.xxl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.7)',
+    ...NEU.raised,
+  },
+  plHeaderRowCat: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(124,58,237,0.15)',
+  },
+  plThCat: {
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(124,58,237,0.12)',
+  },
+  plThCatText: { fontSize: 10, fontWeight: '800', color: COLORS.accent, textTransform: 'uppercase', letterSpacing: 0.3 },
+
+  plHeaderRowSub: {
+    flexDirection: 'row',
+    backgroundColor: '#f8f7ff',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(124,58,237,0.15)',
+  },
+  plThSub: {
+    paddingVertical: 7,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(124,58,237,0.08)',
+  },
+  plThSubText: { fontSize: 10, fontWeight: '800', color: COLORS.secondary, textTransform: 'uppercase' },
+  plThDateText: { fontSize: 8, color: COLORS.secondary, fontWeight: '600' },
+
+  plDataRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(124,58,237,0.08)',
+    alignItems: 'center',
+  },
+  plTd: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(124,58,237,0.08)',
+  },
+  plAvatarSmall: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...NEU.inset,
+  },
+  plAvatarSmallText: { fontSize: 10, fontWeight: '800', color: COLORS.accent },
+  plAlumnoNombre: { fontSize: 11, fontWeight: '800', color: COLORS.onSurface },
+  plAlumnoDni: { fontSize: 9, color: COLORS.secondary, fontWeight: '600' },
+  plTextBold: { fontSize: 12, fontWeight: '800' },
+  plPctBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+  },
+  plPctBadgeText: { fontSize: 10, fontWeight: '800' },
+  plConceptoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: RADIUS.full,
+  },
+  plConceptoText: { fontSize: 9, fontWeight: '800' },
+  plNotaBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    minWidth: 26,
+    alignItems: 'center',
+  },
+  plNotaText: { fontSize: 11, fontWeight: '800' },
+  plPromBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.lg,
+    minWidth: 36,
+    alignItems: 'center',
+  },
+  plPromBadgeText: { fontSize: 11, fontWeight: '900', color: '#ffffff' },
+  plConsolidadoVal: { fontSize: 12, fontWeight: '800', color: COLORS.onSurface },
 
   // Empty Card
   emptyCard: {

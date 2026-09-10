@@ -9,11 +9,12 @@ import {
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 import { apiFetch } from '../../api/client';
-import { COLORS, RADIUS, SPACING } from '../../theme';
+import { COLORS, RADIUS, SPACING, NEU } from '../../theme';
+import { useNotifStore } from '../../store/notifStore';
 
 interface AgendaItem { id: number; fecha: string; descripcion: string; }
 
@@ -29,7 +30,13 @@ export default function BottomNav({ activeRoute }: BottomNavProps) {
   const [modalIngreso, setModalIngreso] = useState(false);
   const [eventosHoy, setEventosHoy] = useState<AgendaItem[]>([]);
   const [eventosMañana, setEventosMañana] = useState<AgendaItem[]>([]);
-  const [ingresoVisto, setIngresoVisto] = useState(false);
+  const { seenIds, isLoaded, loadSeen, markAsSeen, ingresoVisto, setIngresoVisto } = useNotifStore();
+
+  useEffect(() => {
+    if (!isLoaded) {
+      loadSeen();
+    }
+  }, [isLoaded, loadSeen]);
 
   useEffect(() => {
     const fetchAgenda = async () => {
@@ -55,10 +62,26 @@ export default function BottomNav({ activeRoute }: BottomNavProps) {
       } catch { /* silencioso */ }
     };
     fetchAgenda();
-  }, []);
+  }, [ingresoVisto, setIngresoVisto]);
 
-  const totalNotif = eventosHoy.length + eventosMañana.length;
+  const todosEventos = [...eventosHoy, ...eventosMañana];
+  const eventosNoVistos = todosEventos.filter(i => !seenIds.includes(i.id));
+  const totalNoVistos = eventosNoVistos.length;
   const canGoBack = navigation.canGoBack();
+
+  const handleOpenNotif = () => {
+    setModalNotif(true);
+    if (todosEventos.length > 0) {
+      markAsSeen(todosEventos.map(e => e.id));
+    }
+  };
+
+  const handleCloseIngreso = () => {
+    setModalIngreso(false);
+    if (eventosHoy.length > 0) {
+      markAsSeen(eventosHoy.map(e => e.id));
+    }
+  };
 
   return (
     <>
@@ -73,7 +96,7 @@ export default function BottomNav({ activeRoute }: BottomNavProps) {
             disabled={!canGoBack}
             activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={22} color={canGoBack ? COLORS.secondary : COLORS.border} />
+            <Ionicons name="arrow-back" size={26} color={canGoBack ? COLORS.secondary : COLORS.border} />
           </TouchableOpacity>
 
           {/* Home (activo con inset) */}
@@ -84,41 +107,36 @@ export default function BottomNav({ activeRoute }: BottomNavProps) {
           >
             <Ionicons
               name={activeRoute === 'Home' ? 'home' : 'home-outline'}
-              size={22}
+              size={26}
               color={COLORS.accent}
             />
           </TouchableOpacity>
 
-          {/* 🤖 IA (placeholder) */}
-          <TouchableOpacity style={pill.btn} activeOpacity={0.8}>
-            <Text style={pill.emoji}>🤖</Text>
+          {/* 🤖 Asistente Pedagógico IA */}
+          <TouchableOpacity
+            style={[pill.btn, activeRoute === 'ChatbotIA' && pill.btnActive]}
+            onPress={() => navigation.navigate('ChatbotIA' as never)}
+            activeOpacity={0.8}
+          >
+            <MaterialCommunityIcons
+              name="robot-outline"
+              size={26}
+              color={activeRoute === 'ChatbotIA' ? COLORS.accent : COLORS.secondary}
+            />
           </TouchableOpacity>
 
           {/* 🔔 Notificaciones */}
           <TouchableOpacity
             style={pill.btn}
-            onPress={() => setModalNotif(true)}
+            onPress={handleOpenNotif}
             activeOpacity={0.8}
           >
-            <Ionicons name="notifications-outline" size={22} color={COLORS.secondary} />
-            {totalNotif > 0 && (
+            <Ionicons name="notifications-outline" size={26} color={COLORS.secondary} />
+            {totalNoVistos > 0 && (
               <View style={pill.badge}>
-                <Text style={pill.badgeText}>{totalNotif}</Text>
+                <Text style={pill.badgeText}>{totalNoVistos}</Text>
               </View>
             )}
-          </TouchableOpacity>
-
-          {/* 👤 Perfil */}
-          <TouchableOpacity
-            style={[pill.btn, activeRoute === 'Perfil' && pill.btnActive]}
-            onPress={() => navigation.navigate('Perfil' as never)}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name={activeRoute === 'Perfil' ? 'person' : 'person-outline'}
-              size={22}
-              color={activeRoute === 'Perfil' ? COLORS.accent : COLORS.secondary}
-            />
           </TouchableOpacity>
 
         </View>
@@ -139,69 +157,77 @@ export default function BottomNav({ activeRoute }: BottomNavProps) {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {eventosHoy.length > 0 && (
-                <View style={modal.group}>
-                  <Text style={modal.groupLabel}>📅 Hoy</Text>
-                  {eventosHoy.map(e => (
-                    <View key={e.id} style={modal.eventCard}>
-                      <Text style={modal.eventText}>{e.descripcion}</Text>
+              {todosEventos.length === 0 ? (
+                <Text style={modal.empty}>No tienes recordatorios próximos</Text>
+              ) : (
+                <>
+                  {eventosHoy.length > 0 && (
+                    <View style={modal.group}>
+                      <Text style={modal.groupLabel}>📅 Hoy</Text>
+                      {eventosHoy.map(item => (
+                        <View key={item.id} style={modal.eventCard}>
+                          <View style={modal.eventCardRow}>
+                            <Text style={modal.bulletDot}>•</Text>
+                            <Text style={modal.eventText}>{item.descripcion}</Text>
+                          </View>
+                        </View>
+                      ))}
                     </View>
-                  ))}
-                </View>
-              )}
+                  )}
 
-              {eventosMañana.length > 0 && (
-                <View style={modal.group}>
-                  <Text style={[modal.groupLabel, { color: COLORS.secondary }]}>📅 Mañana</Text>
-                  {eventosMañana.map(e => (
-                    <View key={e.id} style={[modal.eventCard, { backgroundColor: '#f9fafb' }]}>
-                      <Text style={[modal.eventText, { color: COLORS.secondary }]}>{e.descripcion}</Text>
+                  {eventosMañana.length > 0 && (
+                    <View style={modal.group}>
+                      <Text style={modal.groupLabel}>⏰ Mañana</Text>
+                      {eventosMañana.map(item => (
+                        <View key={item.id} style={modal.eventCard}>
+                          <View style={modal.eventCardRow}>
+                            <Text style={modal.bulletDot}>•</Text>
+                            <Text style={modal.eventText}>{item.descripcion}</Text>
+                          </View>
+                        </View>
+                      ))}
                     </View>
-                  ))}
-                </View>
-              )}
-
-              {totalNotif === 0 && (
-                <Text style={modal.empty}>No hay eventos para hoy ni mañana</Text>
+                  )}
+                </>
               )}
             </ScrollView>
 
             <TouchableOpacity style={modal.closeBtn} onPress={() => setModalNotif(false)}>
-              <Text style={modal.closeBtnText}>Cerrar</Text>
+              <Text style={modal.closeBtnText}>Entendido</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* ── MODAL AUTOMÁTICO AL INGRESAR ── */}
-      <Modal visible={modalIngreso} transparent animationType="fade" onRequestClose={() => setModalIngreso(false)}>
+      {/* ── MODAL INGRESO AUTOMÁTICO ── */}
+      <Modal visible={modalIngreso} transparent animationType="fade" onRequestClose={handleCloseIngreso}>
         <View style={modal.centeredOverlay}>
           <View style={modal.centeredSheet}>
             <View style={modal.header}>
               <View style={modal.titleRow}>
-                <Ionicons name="calendar" size={18} color={COLORS.accent} />
-                <Text style={modal.title}>Eventos de hoy</Text>
+                <Ionicons name="calendar" size={20} color={COLORS.accent} />
+                <Text style={modal.title}>Recordatorio de Hoy</Text>
               </View>
-              <TouchableOpacity onPress={() => setModalIngreso(false)}>
+              <TouchableOpacity onPress={handleCloseIngreso}>
                 <Ionicons name="close" size={22} color={COLORS.secondary} />
               </TouchableOpacity>
             </View>
 
-            <Text style={modal.subtitle}>
-              Tenés {eventosHoy.length} evento{eventosHoy.length > 1 ? 's' : ''} agendado{eventosHoy.length > 1 ? 's' : ''} para hoy
-            </Text>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 220 }}>
+              <View style={modal.group}>
+                {eventosHoy.map(item => (
+                  <View key={item.id} style={modal.eventCard}>
+                    <View style={modal.eventCardRow}>
+                      <Text style={modal.bulletDot}>•</Text>
+                      <Text style={modal.eventText}>{item.descripcion}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
 
-            <View style={modal.group}>
-              {eventosHoy.map(e => (
-                <View key={e.id} style={modal.eventCardRow}>
-                  <Text style={modal.bulletDot}>•</Text>
-                  <Text style={modal.eventText}>{e.descripcion}</Text>
-                </View>
-              ))}
-            </View>
-
-            <TouchableOpacity style={modal.closeBtn} onPress={() => setModalIngreso(false)}>
-              <Text style={modal.closeBtnText}>Entendido</Text>
+            <TouchableOpacity style={modal.closeBtn} onPress={handleCloseIngreso}>
+              <Text style={modal.closeBtnText}>¡Entendido!</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -221,43 +247,32 @@ const pill = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#f5f3ff',
+    gap: 8,
     borderRadius: RADIUS.full,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 8,
-    // Sombra neumorphic idéntica al web
-    shadowColor: '#A3B1C6',
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    ...NEU.raisedPill,
   },
   btn: {
-    padding: 10,
+    width: 50,
+    height: 50,
     borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   btnActive: {
-    // Inset neumorphic (active home)
-    backgroundColor: '#ebe9f8',
-    shadowColor: '#B8C6D9',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.6,
-    shadowRadius: 4,
+    ...NEU.insetPressed,
     elevation: 0,
   },
   btnDisabled: { opacity: 0.3 },
-  emoji: { fontSize: 20, lineHeight: 24 },
   badge: {
-    position: 'absolute', top: 4, right: 4,
+    position: 'absolute', top: 3, right: 3,
     backgroundColor: '#ef4444',
-    width: 16, height: 16, borderRadius: 8,
+    width: 18, height: 18, borderRadius: 9,
     alignItems: 'center', justifyContent: 'center',
   },
-  badgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
 });
 
 const modal = StyleSheet.create({

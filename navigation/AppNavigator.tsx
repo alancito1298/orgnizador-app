@@ -10,6 +10,7 @@ import CursoDetalleScreen from '../src/screens/cursos/CursoDetalleScreen';
 import AgendaScreen from '../src/screens/agenda/AgendaScreen';
 import HorariosScreen from '../src/screens/horarios/HorariosScreen';
 import PerfilScreen from '../src/screens/perfil/PerfilScreen';
+import ChatbotScreen from '../src/screens/chat/ChatbotScreen';
 import BottomNav from '../src/components/shared/BottomNav';
 
 export type AppStackParamList = {
@@ -19,6 +20,7 @@ export type AppStackParamList = {
   Agenda: undefined;
   Horario: undefined;
   Perfil: undefined;
+  ChatbotIA: undefined;
 };
 
 // Wrapper que agrega el BottomNav flotante por encima de cada pantalla
@@ -78,6 +80,10 @@ export default function AppNavigator() {
       <Stack.Screen
         name="Perfil"
         component={withBottomNav(PerfilScreen, 'Perfil')}
+      />
+      <Stack.Screen
+        name="ChatbotIA"
+        component={withBottomNav(ChatbotScreen, 'ChatbotIA')}
       />
     </Stack.Navigator>
   );

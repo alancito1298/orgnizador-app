@@ -179,14 +179,38 @@ export default function AgendaScreen() {
     ]);
   };
 
+  const esMesActual = year === hoy.getFullYear() && month === hoy.getMonth();
+
   const eventosDelMes = useMemo(() => {
+    if (esMesActual) {
+      const hoyDate = new Date();
+      const ayer = new Date(hoyDate.getFullYear(), hoyDate.getMonth(), hoyDate.getDate() - 1);
+      const posterior15 = new Date(hoyDate.getFullYear(), hoyDate.getMonth(), hoyDate.getDate() + 15);
+      const toKeyStr = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+      const desde = toKeyStr(ayer);
+      const hasta = toKeyStr(posterior15);
+
+      return agendaItems
+        .filter((a) => {
+          if (!a.fecha) return false;
+          const k = a.fecha.split('T')[0];
+          return k >= desde && k <= hasta;
+        })
+        .sort((a, b) => a.fecha.localeCompare(b.fecha));
+    }
+
     return agendaItems
       .filter((a) => {
         const [y, m] = a.fecha.split('T')[0].split('-').map(Number);
         return y === year && m === month + 1;
       })
       .sort((a, b) => a.fecha.localeCompare(b.fecha));
-  }, [agendaItems, year, month]);
+  }, [agendaItems, year, month, esMesActual]);
 
   const hoyKeyStr = toKey(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
 

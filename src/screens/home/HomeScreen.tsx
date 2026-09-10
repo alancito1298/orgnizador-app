@@ -16,7 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { apiFetch } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
-import { COLORS, RADIUS, SPACING } from '../../theme';
+import { COLORS, RADIUS, SPACING, NEU } from '../../theme';
 import ModalCrearCurso from '../../components/cursos/ModalCrearCurso';
 import type { AppStackParamList } from '../../../navigation/AppNavigator';
 
@@ -103,9 +103,7 @@ function Almanaque() {
 const al = StyleSheet.create({
   wrap: {
     width: 74, borderRadius: RADIUS.lg, overflow: 'hidden',
-    backgroundColor: '#fff',
-    shadowColor: '#7c3aed', shadowOffset:{width:0,height:3}, shadowOpacity:0.15, shadowRadius:8, elevation:4,
-    borderWidth:1, borderColor:'rgba(124,58,237,0.12)',
+    ...NEU.raisedCard,
   },
   head: { backgroundColor: COLORS.accent, paddingBottom: 4, paddingTop: 6, alignItems:'center' },
   anillasRow: { flexDirection:'row', justifyContent:'space-around', width:'100%', paddingHorizontal:12, marginBottom:3 },
@@ -118,10 +116,9 @@ const al = StyleSheet.create({
 });
 
 // ── Sticker de actividad (carrusel horizontal, fiel al web) ────────────────
-function StickerActividad({ act, index, onPress }: { act: ActividadHoy; index: number; onPress: () => void }) {
-  const borderColor = STICKER_BORDER_COLORS[index % STICKER_BORDER_COLORS.length];
+function StickerActividad({ act, onPress }: { act: ActividadHoy; index?: number; onPress: () => void }) {
   return (
-    <TouchableOpacity style={[sk.card, { borderLeftColor: borderColor }]} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity style={sk.card} onPress={onPress} activeOpacity={0.85}>
       <View style={sk.topRow}>
         <View style={sk.horaBox}>
           <Ionicons name="time-outline" size={12} color={COLORS.accent} />
@@ -141,22 +138,21 @@ function StickerActividad({ act, index, onPress }: { act: ActividadHoy; index: n
           <Text style={sk.escuela} numberOfLines={1}>{act.escuela}</Text>
         </View>
       ) : null}
-
-      <TouchableOpacity style={sk.btn} onPress={onPress} activeOpacity={0.8}>
-        <Text style={sk.btnText}>Ir al curso</Text>
-        <Ionicons name="arrow-forward" size={12} color={COLORS.accent} />
-      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
 
 const sk = StyleSheet.create({
   card: {
-    width: 220, backgroundColor:'#f5f3ff',
-    borderRadius: RADIUS.xl, padding: SPACING.md,
-    borderLeftWidth: 5, marginRight: SPACING.sm,
-    shadowColor:'#000', shadowOffset:{width:0,height:2}, shadowOpacity:0.07, shadowRadius:6, elevation:3,
-    justifyContent:'space-between', gap: 6,
+    width: '48.5%',
+    backgroundColor: '#ffffff',
+    borderRadius: RADIUS.xl,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: '#ede9fe',
+    justifyContent: 'space-between',
+    minHeight: 95,
+    gap: 6,
   },
   topRow: { flexDirection:'row', alignItems:'center', justifyContent:'space-between' },
   horaBox: { flexDirection:'row', alignItems:'center', gap:3 },
@@ -169,13 +165,6 @@ const sk = StyleSheet.create({
   materia: { fontSize:14, fontWeight:'800', color: COLORS.onSurface, textTransform:'uppercase', letterSpacing:0.3 },
   escuelaRow: { flexDirection:'row', alignItems:'center', gap:4 },
   escuela: { fontSize:12, color: COLORS.secondary, fontWeight:'500', flex:1 },
-  btn: {
-    flexDirection:'row', alignItems:'center', justifyContent:'center', gap:4,
-    backgroundColor:'#fff', borderRadius: RADIUS.md, paddingVertical:7,
-    shadowColor:'#000', shadowOffset:{width:0,height:1}, shadowOpacity:0.05, shadowRadius:3, elevation:1,
-    marginTop:2,
-  },
-  btnText: { fontSize:11, fontWeight:'800', color: COLORS.accent, textTransform:'uppercase', letterSpacing:0.5 },
 });
 
 // ── Card de Curso (grid 2 columnas) ─────────────────────────────────────────
@@ -219,19 +208,12 @@ function AgregarNuevoCard({ onPress }: { onPress: () => void }) {
 const cc = StyleSheet.create({
   card: {
     width: '48.5%',
-    backgroundColor: '#f5f3ff',
     borderRadius: RADIUS.xl,
     padding: SPACING.md,
     justifyContent: 'space-between',
     minHeight: 115,
     gap: SPACING.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.1)',
+    ...NEU.raisedCard,
   },
   topRow: {
     flexDirection: 'row',
@@ -242,22 +224,20 @@ const cc = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: RADIUS.md,
-    backgroundColor: 'rgba(124,58,237,0.1)',
+    ...NEU.inset,
     alignItems: 'center',
     justifyContent: 'center',
   },
   anioBadge: {
-    backgroundColor: '#ede9fe',
+    ...NEU.inset,
     borderRadius: RADIUS.md,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   anioText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '900',
     color: COLORS.accent,
     letterSpacing: 0.3,
@@ -286,27 +266,22 @@ const cc = StyleSheet.create({
   // Card "+ Agregar nuevo"
   agregarCard: {
     width: '48.5%',
-    backgroundColor: '#ffffff',
     borderRadius: RADIUS.xl,
     padding: SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 115,
     gap: 6,
+    ...NEU.raisedCard,
+    borderStyle: 'dashed',
     borderWidth: 1.5,
     borderColor: 'rgba(124,58,237,0.35)',
-    borderStyle: 'dashed',
-    shadowColor: '#7c3aed',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 1,
   },
   agregarIconBox: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: COLORS.accentLight,
+    ...NEU.inset,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -340,13 +315,14 @@ function NavMenuItem({ icon, label, onPress }: { icon: keyof typeof Ionicons.gly
 const nm = StyleSheet.create({
   row: {
     flexDirection:'row', alignItems:'center', gap: SPACING.sm,
-    backgroundColor:'#f5f3ff', borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.lg,
     paddingHorizontal: SPACING.md, paddingVertical: 11,
-    shadowColor:'#000', shadowOffset:{width:0,height:1}, shadowOpacity:0.05, shadowRadius:4, elevation:2,
+    ...NEU.raisedCard,
   },
   iconBox: {
     width:32, height:32, borderRadius: RADIUS.md,
-    backgroundColor:'rgba(124,58,237,0.1)', alignItems:'center', justifyContent:'center',
+    ...NEU.inset,
+    alignItems:'center', justifyContent:'center',
   },
   label: { flex:1, fontSize:13, fontWeight:'800', color: COLORS.accent },
 });
@@ -393,10 +369,26 @@ export default function HomeScreen() {
       setCursos(cursosList);
 
       if (agendaRes.status === 'fulfilled') {
-        const eventos = agendaRes.value.filter(a => {
-          const [y, m] = a.fecha.split('T')[0].split('-').map(Number);
-          return y === currentYear && m === currentMonth + 1;
-        }).sort((a,b) => a.fecha.localeCompare(b.fecha));
+        const hoyDate = new Date();
+        const ayer = new Date(hoyDate.getFullYear(), hoyDate.getMonth(), hoyDate.getDate() - 1);
+        const posterior15 = new Date(hoyDate.getFullYear(), hoyDate.getMonth(), hoyDate.getDate() + 15);
+        const toKey = (d: Date) => {
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${y}-${m}-${day}`;
+        };
+        const desde = toKey(ayer);
+        const hasta = toKey(posterior15);
+
+        const rawAgenda = Array.isArray(agendaRes.value) ? agendaRes.value : [];
+        const eventos = rawAgenda
+          .filter(a => {
+            if (!a.fecha) return false;
+            const key = a.fecha.split('T')[0];
+            return key >= desde && key <= hasta;
+          })
+          .sort((a, b) => a.fecha.localeCompare(b.fecha));
         setAgenda(eventos);
       }
 
@@ -499,15 +491,11 @@ export default function HomeScreen() {
                   <Text style={s.clasesText}>{actividadesHoy.length} {actividadesHoy.length===1?'clase':'clases'}</Text>
                 </View>
               </View>
-              <ScrollView
-                horizontal showsHorizontalScrollIndicator={false}
-                contentContainerStyle={s.stickersScroll}
-              >
-                {actividadesHoy.map((act, i) => (
+              <View style={s.stickersGrid}>
+                {actividadesHoy.map((act) => (
                   <StickerActividad
                     key={act.id}
                     act={act}
-                    index={i}
                     onPress={() => {
                       if (act.cursoId) {
                         navigation.navigate('CursoDetalle', { cursoId: act.cursoId });
@@ -517,7 +505,7 @@ export default function HomeScreen() {
                     }}
                   />
                 ))}
-              </ScrollView>
+              </View>
             </>
           ) : (
             <View style={s.sinClasesRow}>
@@ -543,6 +531,7 @@ export default function HomeScreen() {
             <NavMenuItem icon="school-outline"    label="Cursos"          onPress={() => navigation.navigate('Cursos')} />
             <NavMenuItem icon="document-text-outline" label="Planificaciones" onPress={() => navigation.navigate('Cursos')} />
             <NavMenuItem icon="time-outline"      label="Horarios"        onPress={() => navigation.navigate('Horario')} />
+            <NavMenuItem icon="sparkles-outline"  label="Asistente Pedagógico IA" onPress={() => navigation.navigate('ChatbotIA')} />
             <NavMenuItem icon="person-circle-outline" label="Mi Perfil"   onPress={() => navigation.navigate('Perfil')} />
           </View>
         </View>
@@ -593,7 +582,7 @@ export default function HomeScreen() {
           {agenda.length === 0 ? (
             <View style={s.emptyCard}>
               <Ionicons name="calendar-outline" size={28} color={COLORS.secondary} />
-              <Text style={s.emptyText}>No hay eventos agendados para este mes.</Text>
+              <Text style={s.emptyText}>No hay eventos agendados desde ayer hasta los próximos 15 días.</Text>
             </View>
           ) : (
             <View style={s.agendaList}>
@@ -689,6 +678,12 @@ const s = StyleSheet.create({
     paddingHorizontal:10, paddingVertical:3,
   },
   clasesText: { fontSize:10, fontWeight:'800', color: COLORS.accent },
+  stickersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'flex-start',
+  },
   stickersScroll: { paddingBottom: SPACING.sm },
   sinClasesRow: {
     flexDirection:'row', alignItems:'center', gap: SPACING.sm,
@@ -701,8 +696,8 @@ const s = StyleSheet.create({
 
   // Menú nav card
   card: {
-    backgroundColor:'#f5f3ff', borderRadius: RADIUS.xl, padding: SPACING.md,
-    shadowColor:'#000', shadowOffset:{width:0,height:2}, shadowOpacity:0.07, shadowRadius:8, elevation:3,
+    borderRadius: RADIUS.xl, padding: SPACING.md,
+    ...NEU.raised,
   },
   menuTitleRow: { flexDirection:'row', alignItems:'center', gap:6, marginBottom: SPACING.sm },
   menuTitle: { fontSize:12, fontWeight:'800', color: COLORS.accent, textTransform:'uppercase', letterSpacing:1 },
@@ -723,13 +718,14 @@ const s = StyleSheet.create({
 
   // Botones empty state
   emptyCard: {
-    backgroundColor:'#f5f3ff', borderRadius: RADIUS.xl,
+    borderRadius: RADIUS.xl,
     padding: SPACING.xl, alignItems:'center', gap: SPACING.sm,
+    ...NEU.inset,
   },
   emptyText: { fontSize:12, color: COLORS.secondary, fontWeight:'500', textAlign:'center' },
   crearBtn: {
-    backgroundColor:'#fff', borderRadius: RADIUS.lg, paddingHorizontal: SPACING.lg, paddingVertical:8,
-    shadowColor:'#000', shadowOffset:{width:0,height:1}, shadowOpacity:0.06, shadowRadius:4, elevation:2,
+    borderRadius: RADIUS.lg, paddingHorizontal: SPACING.lg, paddingVertical:8,
+    ...NEU.raisedCard,
   },
   crearBtnText: { fontSize:12, fontWeight:'800', color: COLORS.accent, textTransform:'uppercase', letterSpacing:0.5 },
 
@@ -739,12 +735,13 @@ const s = StyleSheet.create({
   agendaList: { gap: SPACING.sm },
   agendaCard: {
     flexDirection:'row', alignItems:'center', gap: SPACING.md,
-    backgroundColor:'#f5f3ff', borderRadius: RADIUS.xl, padding: SPACING.md,
-    shadowColor:'#000', shadowOffset:{width:0,height:1}, shadowOpacity:0.06, shadowRadius:4, elevation:2,
+    borderRadius: RADIUS.xl, padding: SPACING.md,
+    ...NEU.raisedCard,
   },
   agendaDiaBox: {
     width:48, height:48, borderRadius: RADIUS.lg,
-    backgroundColor:'rgba(124,58,237,0.1)', alignItems:'center', justifyContent:'center', gap:1,
+    ...NEU.inset,
+    alignItems:'center', justifyContent:'center', gap:1,
   },
   agendaDiaLabel: { fontSize:9, fontWeight:'700', color: COLORS.accent, textTransform:'uppercase', letterSpacing:0.5 },
   agendaDiaNum: { fontSize:18, fontWeight:'800', color: COLORS.accent, lineHeight:20 },
