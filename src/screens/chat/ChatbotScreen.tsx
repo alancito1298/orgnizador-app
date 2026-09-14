@@ -27,12 +27,70 @@ interface Message {
   timestamp: string;
 }
 
-const PROMPTS_SUGERIDOS = [
-  '📝 Secuencia didáctica de 3 clases',
-  '📝 Crear evaluación con 5 preguntas',
-  '💡 Dinámica corta para iniciar clase',
-  '♿ Idea para adaptación curricular',
-];
+// ── Inline markdown: **bold** ─────────────────────────────────────────────
+function renderInlineMobile(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*\n]+\*\*)/);
+  if (parts.length === 1) return text;
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.startsWith('**') && part.endsWith('**')
+          ? <Text key={i} style={mds.bold}>{part.slice(2, -2)}</Text>
+          : <Text key={i}>{part}</Text>
+      )}
+    </>
+  );
+}
+
+// ── Bloque markdown completo ───────────────────────────────────────────────
+function MarkdownMessage({ text }: { text: string }) {
+  const lines = text.split('\n');
+  return (
+    <View>
+      {lines.map((line, i) => {
+        // H1 / H2
+        if (/^#{1,2}\s+/.test(line)) {
+          const content = line.replace(/^#{1,2}\s+/, '').replace(/\*\*/g, '').trim();
+          return <Text key={i} style={mds.h1}>{content}</Text>;
+        }
+        // H3 – H6
+        if (/^#{3,6}\s+/.test(line)) {
+          const content = line.replace(/^#{3,6}\s+/, '').replace(/\*\*/g, '').trim();
+          return <Text key={i} style={mds.h2}>{content}</Text>;
+        }
+        // Lista con guion / asterisco
+        if (/^\s*[-*+]\s+/.test(line)) {
+          const content = line.replace(/^\s*[-*+]\s+/, '').trim();
+          return (
+            <Text key={i} style={mds.body}>
+              {'\u2022 '}{renderInlineMobile(content)}
+            </Text>
+          );
+        }
+        // Lista numerada
+        const numMatch = line.match(/^\s*(\d+)\.\s+(.*)/);
+        if (numMatch) {
+          return (
+            <Text key={i} style={mds.body}>
+              {numMatch[1]}. {renderInlineMobile(numMatch[2].trim())}
+            </Text>
+          );
+        }
+        // Línea vacía → separador
+        if (!line.trim()) return <View key={i} style={{ height: 6 }} />;
+        // Párrafo normal
+        return <Text key={i} style={mds.body}>{renderInlineMobile(line)}</Text>;
+      })}
+    </View>
+  );
+}
+
+const mds = StyleSheet.create({
+  h1:   { fontSize: 25, fontWeight: '900', color: COLORS.accent,    marginTop: 8,  marginBottom: 4, lineHeight: 32 },
+  h2:   { fontSize: 23, fontWeight: '800', color: COLORS.onSurface, marginTop: 6,  marginBottom: 2, lineHeight: 30 },
+  body: { fontSize: 23, fontWeight: '500', color: COLORS.onSurface, lineHeight: 32 },
+  bold: { fontSize: 23, fontWeight: '800', color: COLORS.onSurface },
+});
 
 const CHAT_STORAGE_KEY = 'chat_historial_ia_mobile';
 
@@ -160,7 +218,10 @@ export default function ChatbotScreen() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ prompt: texto }),
+        body: JSON.stringify({
+          prompt: texto,
+          historial: mensajes.slice(-8).map((m) => ({ sender: m.sender, text: m.text })),
+        }),
       });
 
       const data = await res.json();
@@ -228,8 +289,8 @@ export default function ChatbotScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 60 : 80}
       >
         {/* ── LISTA DE MENSAJES ── */}
         <ScrollView
@@ -247,9 +308,11 @@ export default function ChatbotScreen() {
                 style={[s.msgWrapper, esUsuario ? s.msgWrapperUser : s.msgWrapperBot]}
               >
                 <View style={[s.msgBubble, esUsuario ? s.msgBubbleUser : s.msgBubbleBot]}>
-                  <Text style={[s.msgText, esUsuario ? s.msgTextUser : s.msgTextBot]}>
-                    {msg.text}
-                  </Text>
+                  {esUsuario ? (
+                    <Text style={[s.msgText, s.msgTextUser]}>{msg.text}</Text>
+                  ) : (
+                    <MarkdownMessage text={msg.text} />
+                  )}
 
                   {!esUsuario && (
                     <TouchableOpacity
@@ -275,26 +338,10 @@ export default function ChatbotScreen() {
           )}
         </ScrollView>
 
-        {/* ── PROMPTS RÁPIDOS (Si la conversación es breve) ── */}
-        {mensajes.length <= 2 && !cargando && (
-          <View style={s.promptsContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.promptsScroll}>
-              {PROMPTS_SUGERIDOS.map((prompt, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={s.promptChip}
-                  onPress={() => enviarMensaje(prompt)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={s.promptChipText}>{prompt}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+
 
         {/* ── BARRA DE ENTRADA / INPUT ── */}
-        <View style={[s.inputContainer, { paddingBottom: insets.bottom + 70 }]}>
+        <View style={[s.inputContainer, { paddingBottom: insets.bottom + 90 }]}>
           <View style={s.inputPill}>
             <TextInput
               style={s.input}
@@ -495,31 +542,7 @@ const s = StyleSheet.create({
     color: COLORS.accent,
   },
 
-  // Prompts rápidos
-  promptsContainer: {
-    paddingVertical: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(124,58,237,0.08)',
-  },
-  promptsScroll: {
-    paddingHorizontal: SPACING.md,
-    gap: 8,
-  },
-  promptChip: {
-    backgroundColor: '#ede9fe',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: RADIUS.full,
-    borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.2)',
-  },
-  promptChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.accent,
-  },
 
-  // Input
   inputContainer: {
     paddingHorizontal: SPACING.md,
     paddingTop: 8,
