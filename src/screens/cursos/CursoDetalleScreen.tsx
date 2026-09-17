@@ -21,6 +21,7 @@ import AppInput from '../../components/ui/AppInput';
 import AppButton from '../../components/ui/AppButton';
 import ImportarAlumnosModal from '../../components/alumnos/ImportarAlumnosModal';
 import PasoConceptoModal from '../../components/alumnos/PasoConceptoModal';
+import PasoCalificacionModal from '../../components/alumnos/PasoCalificacionModal';
 import ModalEditarHorariosCurso from '../../components/cursos/ModalEditarHorariosCurso';
 import {
   exportarAsistenciasCsv,
@@ -147,9 +148,10 @@ export default function CursoDetalleScreen() {
   const [valorNota, setValorNota] = useState('');
   const [guardandoNota, setGuardandoNota] = useState(false);
 
-  // Modales de Importación, Concepto, Descargas y Horarios
+  // Modales de Importación, Concepto, Calificación, Descargas y Horarios
   const [importarModalAbierto, setImportarModalAbierto] = useState(false);
   const [conceptoModalAbierto, setConceptoModalAbierto] = useState(false);
+  const [calificacionModalAbierto, setCalificacionModalAbierto] = useState(false);
   const [menuDescargasAbierto, setMenuDescargasAbierto] = useState(false);
   const [modalEditarHorarios, setModalEditarHorarios] = useState(false);
 
@@ -783,7 +785,7 @@ export default function CursoDetalleScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Fila 2 en mobile: Concepto & Importar */}
+          {/* Fila 2 en mobile: Concepto & Calificación */}
           <View style={s.accionesFila2}>
             <TouchableOpacity
               style={[s.accionTile, { borderColor: '#fde68a' }]}
@@ -795,6 +797,18 @@ export default function CursoDetalleScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              style={[s.accionTile, { borderColor: '#c4b5fd' }]}
+              onPress={() => setCalificacionModalAbierto(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="create-outline" size={17} color={COLORS.accent} />
+              <Text style={[s.accionTileText, { color: COLORS.accent }]}>CALIFICACIÓN</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Fila 3 en mobile: Importar & Nuevo Alumno */}
+          <View style={s.accionesFila2}>
+            <TouchableOpacity
               style={[s.accionTile, { borderColor: '#a7f3d0' }]}
               onPress={() => setImportarModalAbierto(true)}
               activeOpacity={0.8}
@@ -802,10 +816,7 @@ export default function CursoDetalleScreen() {
               <Ionicons name="cloud-upload" size={18} color="#059669" />
               <Text style={[s.accionTileText, { color: '#059669' }]}>IMPORTAR</Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Fila 3 en mobile: Nuevo Alumno & Ver Planillas */}
-          <View style={s.accionesFila2}>
             <TouchableOpacity
               style={s.accionTile}
               onPress={() => {
@@ -821,16 +832,19 @@ export default function CursoDetalleScreen() {
               <Ionicons name="person-add" size={17} color={COLORS.accent} />
               <Text style={s.accionTileText}>NUEVO ALUMNO</Text>
             </TouchableOpacity>
+          </View>
 
-            <TouchableOpacity
-              style={s.accionTile}
-              onPress={() => setActiveTab('planilla')}
-              activeOpacity={0.8}
-            >
+          {/* Fila 4: Ver Planillas */}
+          <TouchableOpacity
+            style={s.accionTile}
+            onPress={() => setActiveTab('planilla')}
+            activeOpacity={0.8}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="grid" size={17} color={COLORS.accent} />
               <Text style={s.accionTileText}>VER PLANILLAS</Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
 
           {/* Fila 4: Editar Horarios y Días */}
           <TouchableOpacity
@@ -1205,16 +1219,25 @@ export default function CursoDetalleScreen() {
           <View style={s.tabSection}>
             <View style={s.notasHeaderRow}>
               <Text style={s.notasHeaderTitle}>NOTAS {trimestre}° TRIMESTRE</Text>
-              <TouchableOpacity
-                style={s.cargarNotaHeaderBtn}
-                onPress={() => {
-                  if (inscripciones.length > 0) setAlumnoSeleccionadoId(inscripciones[0].id);
-                  setModalNuevaNota(true);
-                }}
-              >
-                <Ionicons name="add-circle" size={16} color="#fff" />
-                <Text style={s.cargarNotaHeaderText}>+ Cargar Nota</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <TouchableOpacity
+                  style={[s.cargarNotaHeaderBtn, { backgroundColor: COLORS.accent }]}
+                  onPress={() => setCalificacionModalAbierto(true)}
+                >
+                  <Ionicons name="create-outline" size={14} color="#fff" />
+                  <Text style={s.cargarNotaHeaderText}>Cargar Evaluación</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.cargarNotaHeaderBtn, { backgroundColor: '#f3f4f6' }]}
+                  onPress={() => {
+                    if (inscripciones.length > 0) setAlumnoSeleccionadoId(inscripciones[0].id);
+                    setModalNuevaNota(true);
+                  }}
+                >
+                  <Ionicons name="add-circle-outline" size={14} color={COLORS.accent} />
+                  <Text style={[s.cargarNotaHeaderText, { color: COLORS.accent }]}>+ 1 Nota</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {inscripciones.map((insc) => {
@@ -1848,6 +1871,15 @@ export default function CursoDetalleScreen() {
         inscripciones={inscripciones}
         trimestre={trimestre}
         onCerrar={() => setConceptoModalAbierto(false)}
+        onFinalizado={cargarDatos}
+      />
+
+      {/* ── MODAL CARGAR CALIFICACIONES DEL CURSO ── */}
+      <PasoCalificacionModal
+        abierto={calificacionModalAbierto}
+        inscripciones={inscripciones}
+        trimestre={trimestre}
+        onCerrar={() => setCalificacionModalAbierto(false)}
         onFinalizado={cargarDatos}
       />
 
