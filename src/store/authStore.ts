@@ -20,6 +20,7 @@ interface AuthState {
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   loadToken: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 export interface RegisterData {
@@ -33,24 +34,13 @@ export interface RegisterData {
   fechaNacimiento: string;
 }
 
-// Token de desarrollo firmado para Alan (30 días de vigencia) para auto-recuperar sesión
-const DEV_RESTORE_TOKEN =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjQ3LCJlbWFpbCI6ImFsYW5AdGVzdDFjb20uYXIiLCJub21icmUiOiJBTEFOIEdFUk1BTiIsImlhdCI6MTc4ODg5OTI0NSwiZXhwIjoxNzkxNDkxMjQ1fQ.L-B3hY1mZTJyJNsoWUL-JevthznSkhxyi8CiELoShmg';
-
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   docente: null,
   isLoading: true,
 
   loadToken: async () => {
-    let token = await getToken();
-    console.log('[authStore] loadToken token present:', !!token);
-
-    if (!token && __DEV__) {
-      console.log('[authStore] Restaurando sesión de desarrollo para Alan...');
-      token = DEV_RESTORE_TOKEN;
-      await saveToken(token);
-    }
+    const token = await getToken();
 
     if (token) {
       try {
@@ -100,6 +90,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    await removeToken();
+    set({ token: null, docente: null });
+  },
+
+  deleteAccount: async () => {
+    await apiFetch('/auth/me', { method: 'DELETE', auth: true });
     await removeToken();
     set({ token: null, docente: null });
   },

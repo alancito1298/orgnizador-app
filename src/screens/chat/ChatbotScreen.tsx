@@ -293,6 +293,15 @@ export default function ChatbotScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 60 : 80}
       >
         {/* ── LISTA DE MENSAJES ── */}
+        {/* ── AVISO IA (Google Play AI Policy) ── */}
+        <View style={s.aiDisclaimer}>
+          <Ionicons name="sparkles-outline" size={13} color="#7c3aed" />
+          <Text style={s.aiDisclaimerText}>
+            Generado por IA · Las respuestas son orientativas y deben ser revisadas por el docente
+          </Text>
+        </View>
+
+        {/* ── LISTA DE MENSAJES ── */}
         <ScrollView
           ref={scrollViewRef}
           style={s.chatList}
@@ -578,5 +587,25 @@ const s = StyleSheet.create({
   },
   sendBtnDisabled: {
     backgroundColor: 'rgba(124,58,237,0.2)',
+  },
+  aiDisclaimer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: 16,
+    marginBottom: 4,
+    backgroundColor: '#f5f3ff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.15)',
+  },
+  aiDisclaimerText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#6b21a8',
+    fontWeight: '500',
+    lineHeight: 15,
   },
 });

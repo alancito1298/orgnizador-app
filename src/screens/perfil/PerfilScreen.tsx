@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,7 +56,7 @@ interface ResumenData {
 
 export default function PerfilScreen() {
   const navigation = useNavigation<Nav>();
-  const { logout, docente: docenteAuth } = useAuthStore();
+  const { logout, docente: docenteAuth, deleteAccount } = useAuthStore();
 
   const [perfil, setPerfil] = useState<PerfilData | null>(null);
   const [suscripcion, setSuscripcion] = useState<SuscripcionData | null>(null);
@@ -120,6 +121,50 @@ export default function PerfilScreen() {
           },
         },
       ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Eliminar Cuenta',
+      'Esta acción eliminará permanentemente tu cuenta y todos tus datos (cursos, alumnos, calificaciones y asistencias). Esta operación NO puede revertirse.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Continuar',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Confirmación Final',
+              '¿Estás completamente seguro? Escribí "ELIMINAR" para confirmar.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Sí, eliminar mi cuenta',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await deleteAccount();
+                    } catch (err) {
+                      Alert.alert(
+                        'Error',
+                        'No se pudo eliminar la cuenta. Intentá de nuevo o contactá a soporte.'
+                      );
+                      console.error('Error al eliminar cuenta:', err);
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const handlePrivacyPolicy = () => {
+    Linking.openURL('https://organizadordocente.com/privacidad').catch(() =>
+      Alert.alert('Error', 'No se pudo abrir la página de Política de Privacidad.')
     );
   };
 
@@ -310,6 +355,40 @@ export default function PerfilScreen() {
           <Ionicons name="log-out-outline" size={20} color="#dc2626" />
           <Text style={styles.logoutBtnText}>Cerrar Sesión</Text>
         </TouchableOpacity>
+
+        {/* ── ZONA LEGAL / CUENTA ── */}
+        <View style={styles.legalSection}>
+          <Text style={styles.legalSectionTitle}>Información Legal</Text>
+
+          {/* Política de privacidad */}
+          <TouchableOpacity
+            style={styles.legalRow}
+            onPress={handlePrivacyPolicy}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="shield-outline" size={17} color={COLORS.accent} />
+            <Text style={styles.legalLinkText}>Política de Privacidad</Text>
+            <Ionicons name="open-outline" size={14} color={COLORS.secondary} style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
+
+          {/* Aviso IA */}
+          <View style={styles.aiNoticeBox}>
+            <Ionicons name="sparkles-outline" size={16} color="#7c3aed" />
+            <Text style={styles.aiNoticeText}>
+              El Asistente Pedagógico utiliza Inteligencia Artificial generativa. Sus respuestas son orientativas y deben ser revisadas por el docente.
+            </Text>
+          </View>
+
+          {/* Eliminar cuenta */}
+          <TouchableOpacity
+            style={styles.deleteAccountBtn}
+            onPress={handleDeleteAccount}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="trash-outline" size={17} color="#9f1239" />
+            <Text style={styles.deleteAccountText}>Eliminar mi cuenta y datos</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Versión de la app */}
         <Text style={styles.versionText}>Organizador Docente Mobile • v1.0.0</Text>
@@ -591,6 +670,75 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#dc2626',
   },
+
+  // ── ZONA LEGAL ──
+  legalSection: {
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.xl,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    paddingTop: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  legalSectionTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    letterSpacing: 1,
+    marginBottom: SPACING.xs,
+  },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#f5f3ff',
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.15)',
+  },
+  legalLinkText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '600',
+    color: COLORS.accent,
+    flex: 1,
+  },
+  aiNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: '#faf5ff',
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.12)',
+  },
+  aiNoticeText: {
+    flex: 1,
+    fontSize: FONT_SIZE.xs,
+    color: '#6b21a8',
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  deleteAccountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#fff1f2',
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    marginTop: SPACING.xs,
+  },
+  deleteAccountText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '600',
+    color: '#9f1239',
+  },
+
   versionText: {
     textAlign: 'center',
     marginTop: SPACING.lg,
