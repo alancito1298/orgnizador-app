@@ -154,6 +154,13 @@ export default function CursoDetalleScreen() {
   const [calificacionModalAbierto, setCalificacionModalAbierto] = useState(false);
   const [menuDescargasAbierto, setMenuDescargasAbierto] = useState(false);
   const [modalEditarHorarios, setModalEditarHorarios] = useState(false);
+  const [modalCerrarTrimestre, setModalCerrarTrimestre] = useState(false);
+
+  const avanzarSiguienteTrimestre = () => {
+    const siguiente = trimestre < 3 ? trimestre + 1 : 1;
+    setTrimestre(siguiente);
+    setModalCerrarTrimestre(false);
+  };
 
   // Carga de datos
   const cargarDatos = useCallback(async () => {
@@ -742,6 +749,18 @@ export default function CursoDetalleScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
+
+              {/* Botón Cerrar Trimestre */}
+              <TouchableOpacity
+                style={s.cerrarTrimestreBtn}
+                onPress={() => setModalCerrarTrimestre(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="lock-closed-outline" size={13} color="#92400e" />
+                <Text style={s.cerrarTrimestreBtnText}>
+                  {trimestre < 3 ? `Cerrar ${trimestre}°` : 'Cerrar 3°'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -2011,6 +2030,64 @@ export default function CursoDetalleScreen() {
           cargarDatos();
         }}
       />
+
+      {/* ── MODAL CERRAR TRIMESTRE ── */}
+      <Modal
+        visible={modalCerrarTrimestre}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalCerrarTrimestre(false)}
+      >
+        <View style={s.modalOverlay}>
+          <View style={s.cerrarTrimestreModal}>
+            {/* Cabecera */}
+            <View style={s.cerrarTrimestreHeader}>
+              <View style={s.cerrarTrimestreIconBox}>
+                <Ionicons name="lock-closed" size={24} color="#92400e" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cerrarTrimestreTitulo}>
+                  {trimestre < 3 ? `Cerrar ${trimestre}° Trimestre` : 'Cerrar 3° Trimestre'}
+                </Text>
+                <Text style={s.cerrarTrimestreSubtitulo}>
+                  {trimestre < 3
+                    ? `Avanzarás al ${trimestre + 1}° Trimestre para iniciar la nueva etapa.`
+                    : 'Has concluido el ciclo lectivo. Podés reiniciar al 1° Trimestre.'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Info box */}
+            <View style={s.cerrarTrimestreInfoBox}>
+              <Ionicons name="checkmark-circle" size={16} color="#059669" />
+              <Text style={s.cerrarTrimestreInfoText}>
+                Tus registros anteriores se conservan para exportar a Excel / PDF.{'\n'}
+                La vista activa pasará al nuevo trimestre para registrar asistencias y notas desde cero.
+              </Text>
+            </View>
+
+            {/* Botones */}
+            <View style={s.cerrarTrimestreActions}>
+              <TouchableOpacity
+                style={s.cerrarTrimestreCancelarBtn}
+                onPress={() => setModalCerrarTrimestre(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={s.cerrarTrimestreCancelarText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.cerrarTrimestreConfirmarBtn}
+                onPress={avanzarSiguienteTrimestre}
+                activeOpacity={0.85}
+              >
+                <Text style={s.cerrarTrimestreConfirmarText}>
+                  {trimestre < 3 ? `Pasar al ${trimestre + 1}° Trimestre →` : 'Reiniciar al 1°'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -2106,19 +2183,141 @@ const s = StyleSheet.create({
   greenDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#22c55e' },
   enCursoText: { fontSize: 10, fontWeight: '700', color: COLORS.accent },
 
-  trimestreGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  trimestreGroup: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   trimestreLabel: { fontSize: 11, fontWeight: '700', color: COLORS.secondary },
   trimestreInsetBox: {
     flexDirection: 'row',
-    backgroundColor: '#ede9fe',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
     borderRadius: RADIUS.full,
     padding: 2,
-    gap: 2,
+    gap: 1,
   },
-  trimestreBtn: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: RADIUS.full },
+  trimestreBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.full },
   trimestreBtnActive: { backgroundColor: COLORS.accent },
   trimestreBtnText: { fontSize: 10, fontWeight: '700', color: COLORS.accent },
   trimestreBtnTextActive: { color: '#fff' },
+
+  // Botón Cerrar Trimestre (junto al selector)
+  cerrarTrimestreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: RADIUS.full,
+    backgroundColor: '#fef3c7',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  cerrarTrimestreBtnText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#92400e',
+  },
+
+  // Modal Overlay genérico
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+
+  // Modal Cerrar Trimestre
+  cerrarTrimestreModal: {
+    backgroundColor: '#fff',
+    borderRadius: RADIUS.xxl,
+    padding: SPACING.xl,
+    width: '100%',
+    gap: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  cerrarTrimestreHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.md,
+  },
+  cerrarTrimestreIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.xl,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  cerrarTrimestreTitulo: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  cerrarTrimestreSubtitulo: {
+    fontSize: 12,
+    color: COLORS.secondary,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  cerrarTrimestreInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: '#f0fdf4',
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  cerrarTrimestreInfoText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#166534',
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  cerrarTrimestreActions: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  cerrarTrimestreCancelarBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: RADIUS.xl,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  cerrarTrimestreCancelarText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.secondary,
+  },
+  cerrarTrimestreConfirmarBtn: {
+    flex: 2,
+    paddingVertical: 13,
+    borderRadius: RADIUS.xl,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    shadowColor: COLORS.accent,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  cerrarTrimestreConfirmarText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#fff',
+  },
 
   // 2. Acciones del Curso
   accionesCard: {
