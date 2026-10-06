@@ -44,8 +44,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "organizador-docente"
+        "projectId": "9617ebf0-e58a-4c09-9cd3-864575ca1cc2"
       }
-    }
+    },
+    "owner": "alancito1298"
   }
 }
