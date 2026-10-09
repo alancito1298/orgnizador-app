@@ -18,6 +18,7 @@ interface AuthState {
 
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<{ isNewUser: boolean }>;
   logout: () => Promise<void>;
   loadToken: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -87,6 +88,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     await saveToken(data.access_token);
     const docente = await apiFetch<Docente>('/auth/me', { auth: true });
     set({ token: data.access_token, docente });
+  },
+
+  loginWithGoogle: async (idToken) => {
+    // Mismo endpoint que usa la web: verifica el idToken y crea el docente si no existe
+    const data = await apiFetch<{ access_token: string; isNewUser?: boolean }>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential: idToken }),
+    });
+    await saveToken(data.access_token);
+    const docente = await apiFetch<Docente>('/auth/me', { auth: true });
+    set({ token: data.access_token, docente });
+    return { isNewUser: Boolean(data.isNewUser) };
   },
 
   logout: async () => {

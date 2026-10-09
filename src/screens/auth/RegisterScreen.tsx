@@ -15,6 +15,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AppInput from '../../components/ui/AppInput';
 import AppButton from '../../components/ui/AppButton';
 import AlertMessage from '../../components/ui/AlertMessage';
+import GoogleButton from '../../components/ui/GoogleButton';
 import { useAuthStore, type RegisterData } from '../../store/authStore';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 import type { AuthStackParamList } from '../../../navigation/AuthNavigator';
@@ -109,6 +110,20 @@ export default function RegisterScreen() {
         <View style={styles.card}>
           {error && <AlertMessage type="error" message={error} />}
           {success && <AlertMessage type="success" message={success} />}
+
+          {/* Registro con Google */}
+          <GoogleButton
+            label="Registrarse con Google"
+            disabled={loading}
+            onError={(msg) => { setSuccess(null); setError(msg); }}
+            onSuccess={() => { setError(null); setSuccess('¡Cuenta lista! Ingresando...'); }}
+          />
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>o con tu email</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           <View style={styles.form}>
             {/* Fila: Nombre + Apellido */}
