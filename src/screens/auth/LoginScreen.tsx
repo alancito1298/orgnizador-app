@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -62,7 +63,11 @@ export default function LoginScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Ionicons name="school" size={32} color={COLORS.accent} />
+            <Image
+              source={require('../../../assets/logo-violet.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <View style={styles.badge}>
             <View style={styles.badgeDot} />
@@ -160,18 +165,24 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   logoContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: RADIUS.xl,
+    width: 68,
+    height: 68,
+    borderRadius: 20,
     backgroundColor: COLORS.accentLight,
+    borderWidth: 1.5,
+    borderColor: '#DDD6FE',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
     shadowColor: COLORS.accent,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  logoImage: {
+    width: 42,
+    height: 42,
   },
   badge: {
     flexDirection: 'row',

@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { Pressable, Text, View, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import {
+  Pressable,
+  Text,
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+  NativeModules,
+  TurboModuleRegistry,
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { useAuthStore } from '../../store/authStore';
@@ -16,17 +25,45 @@ const GOOGLE_WEB_CLIENT_ID =
 let GoogleSigninModule: typeof import('@react-native-google-signin/google-signin') | null = null;
 let configured = false;
 
+function isNativeGoogleSigninAvailable(): boolean {
+  try {
+    if (NativeModules && (NativeModules.RNGoogleSignin || NativeModules.RNGoogleSigninModule)) {
+      return true;
+    }
+    if (TurboModuleRegistry && typeof TurboModuleRegistry.get === 'function') {
+      const turbo = TurboModuleRegistry.get('RNGoogleSignin');
+      if (turbo) return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
 function getGoogleSignin() {
+  if (!isNativeGoogleSigninAvailable()) {
+    return null;
+  }
   if (!GoogleSigninModule) {
     try {
-      GoogleSigninModule = require('@react-native-google-signin/google-signin');
+      const mod = require('@react-native-google-signin/google-signin');
+      if (mod && mod.GoogleSignin) {
+        GoogleSigninModule = mod;
+      }
     } catch {
       GoogleSigninModule = null;
+      return null;
     }
   }
   if (GoogleSigninModule && !configured) {
-    GoogleSigninModule.GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
-    configured = true;
+    try {
+      GoogleSigninModule.GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
+      configured = true;
+    } catch (e) {
+      console.warn('[GoogleSignin] Native module not registered in this environment:', e);
+      GoogleSigninModule = null;
+      return null;
+    }
   }
   return GoogleSigninModule;
 }

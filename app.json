@@ -47,7 +47,8 @@
           "organization": "bits-q9",
           "project": "organizador-mobile"
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "eas": {

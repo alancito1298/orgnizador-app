@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -126,7 +127,11 @@ export default function RegisterScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Ionicons name="school" size={32} color={COLORS.accent} />
+            <Image
+              source={require('../../../assets/logo-violet.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <View style={[styles.badge, { backgroundColor: 'rgba(16,185,129,0.12)' }]}>
             <View style={[styles.badgeDot, { backgroundColor: '#10b981' }]} />
@@ -272,10 +277,24 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, padding: SPACING.xl, paddingBottom: SPACING.xxl },
   header: { alignItems: 'center', marginBottom: SPACING.xl, gap: SPACING.sm },
   logoContainer: {
-    width: 64, height: 64, borderRadius: RADIUS.xl,
-    backgroundColor: COLORS.accentLight, alignItems: 'center', justifyContent: 'center',
-    shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2, shadowRadius: 10, elevation: 4,
+    width: 68,
+    height: 68,
+    borderRadius: 20,
+    backgroundColor: COLORS.accentLight,
+    borderWidth: 1.5,
+    borderColor: '#DDD6FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+    shadowColor: COLORS.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  logoImage: {
+    width: 42,
+    height: 42,
   },
   badge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
