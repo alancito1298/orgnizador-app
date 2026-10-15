@@ -15,6 +15,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AppInput from '../../components/ui/AppInput';
 import AppButton from '../../components/ui/AppButton';
 import AlertMessage from '../../components/ui/AlertMessage';
+import GoogleButton from '../../components/ui/GoogleButton';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 import type { AuthStackParamList } from '../../../navigation/AuthNavigator';
@@ -76,6 +77,19 @@ export default function LoginScreen() {
         {/* Card */}
         <View style={styles.card}>
           {error && <AlertMessage type="error" message={error} />}
+
+          {/* Inicio con Google */}
+          <GoogleButton
+            label="Continuar con Google"
+            disabled={loading}
+            onError={(msg) => setError(msg)}
+          />
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>o con tu email</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           <View style={styles.form}>
             <AppInput

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Organizador Docente",
     "slug": "organizador-docente",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,9 +12,9 @@
     },
     "android": {
       "package": "com.organizadordocente.app",
-      "versionCode": 2,
+      "versionCode": 4,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#7c3aed",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -39,6 +39,13 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#1e1b4b"
+        }
+      ],
+      [
+        "@sentry/react-native",
+        {
+          "organization": "bits-q9",
+          "project": "organizador-mobile"
         }
       ]
     ],

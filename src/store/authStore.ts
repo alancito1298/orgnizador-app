@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { apiFetch, saveToken, removeToken, getToken } from '../api/client';
+import { setSentryUser } from '../utils/sentry';
 
 interface Docente {
   id: number;
@@ -47,12 +48,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       try {
         const docente = await apiFetch<Docente>('/auth/me', { auth: true });
         console.log('[authStore] loadToken /auth/me success:', docente?.email);
+        setSentryUser(docente);
         set({ token, docente, isLoading: false });
       } catch (err: any) {
         console.error('[authStore] loadToken /auth/me error:', err?.message || err);
         if (err?.message?.includes('401') || err?.message?.includes('Unauthorized')) {
           console.warn('[authStore] Token expired or invalid (401), removing token...');
           await removeToken();
+          setSentryUser(null);
           set({ token: null, docente: null, isLoading: false });
         } else {
           console.warn('[authStore] Network error on /auth/me, retaining token...');
@@ -71,6 +74,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
     await saveToken(data.access_token);
     const docente = await apiFetch<Docente>('/auth/me', { auth: true });
+    setSentryUser(docente);
     set({ token: data.access_token, docente });
   },
 
@@ -87,6 +91,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
     await saveToken(data.access_token);
     const docente = await apiFetch<Docente>('/auth/me', { auth: true });
+    setSentryUser(docente);
     set({ token: data.access_token, docente });
   },
 
@@ -98,18 +103,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
     await saveToken(data.access_token);
     const docente = await apiFetch<Docente>('/auth/me', { auth: true });
+    setSentryUser(docente);
     set({ token: data.access_token, docente });
     return { isNewUser: Boolean(data.isNewUser) };
   },
 
   logout: async () => {
     await removeToken();
+    setSentryUser(null);
     set({ token: null, docente: null });
   },
 
   deleteAccount: async () => {
     await apiFetch('/auth/me', { method: 'DELETE', auth: true });
     await removeToken();
+    setSentryUser(null);
     set({ token: null, docente: null });
   },
 }));

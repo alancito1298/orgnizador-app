@@ -8,8 +8,11 @@ import AuthNavigator from './navigation/AuthNavigator';
 import AppNavigator from './navigation/AppNavigator';
 import { useAuthStore } from './src/store/authStore';
 import { COLORS } from './src/theme';
+import { initSentry, Sentry } from './src/utils/sentry';
 
-export default function App() {
+initSentry();
+
+function App() {
   const { token, isLoading, loadToken } = useAuthStore();
 
   useEffect(() => {
@@ -43,3 +46,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
 });
+
+export default Sentry.wrap(App);

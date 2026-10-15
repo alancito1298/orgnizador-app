@@ -51,6 +51,19 @@ export default function RegisterScreen() {
     setError(null);
   };
 
+  const handleDateChange = (text: string) => {
+    // Solo permitir números
+    const digits = text.replace(/\D/g, '').slice(0, 8);
+    let formatted = digits;
+    if (digits.length > 4) {
+      formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    } else if (digits.length > 2) {
+      formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    }
+    setForm((f) => ({ ...f, fechaNacimiento: formatted }));
+    setError(null);
+  };
+
   const passwordsMismatch = form.repetirPassword && form.password !== form.repetirPassword;
 
   const handleRegister = async () => {
@@ -60,6 +73,23 @@ export default function RegisterScreen() {
       setError('Completá todos los campos.');
       return;
     }
+
+    // Validar formato DD/MM/AAAA
+    const match = fechaNacimiento.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!match) {
+      setError('La fecha de nacimiento debe tener el formato DD/MM/AAAA.');
+      return;
+    }
+    const dia = parseInt(match[1], 10);
+    const mes = parseInt(match[2], 10);
+    const anio = parseInt(match[3], 10);
+    const currentYear = new Date().getFullYear();
+
+    if (dia < 1 || dia > 31 || mes < 1 || mes > 12 || anio < 1920 || anio > currentYear - 14) {
+      setError('Ingresá una fecha de nacimiento válida.');
+      return;
+    }
+
     if (password !== repetirPassword) {
       setError('Las contraseñas no coinciden.');
       return;
@@ -69,10 +99,12 @@ export default function RegisterScreen() {
       return;
     }
 
+    const fechaISO = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+
     setLoading(true);
     setError(null);
     try {
-      await register(form);
+      await register({ ...form, fechaNacimiento: fechaISO });
       setSuccess('¡Cuenta creada exitosamente! Ingresando...');
     } catch (err: any) {
       setError(err.message || 'Error al crear la cuenta. Verifica los datos.');
@@ -186,8 +218,15 @@ export default function RegisterScreen() {
             <AppInput label="Localidad" iconName="location-outline" placeholder="Ciudad o Barrio"
               value={form.localidad} onChangeText={update('localidad')} autoCapitalize="words" />
 
-            <AppInput label="Fecha de Nacimiento" iconName="calendar-outline" placeholder="AAAA-MM-DD"
-              value={form.fechaNacimiento} onChangeText={update('fechaNacimiento')} keyboardType="numeric" />
+            <AppInput
+              label="Fecha de Nacimiento"
+              iconName="calendar-outline"
+              placeholder="DD/MM/AAAA"
+              value={form.fechaNacimiento}
+              onChangeText={handleDateChange}
+              keyboardType="numeric"
+              maxLength={10}
+            />
 
             {/* Fila: Password + Confirmar */}
             <View style={styles.row}>
