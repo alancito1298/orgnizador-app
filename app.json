@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.organizadordocente.app",
-      "versionCode": 4,
+      "versionCode": 7,
       "adaptiveIcon": {
         "backgroundColor": "#7c3aed",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -48,7 +48,12 @@
           "project": "organizador-mobile"
         }
       ],
-      "@react-native-google-signin/google-signin"
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.463323400546-ue44lhsd55au3r2ocmrdcnttlv8e2ej1"
+        }
+      ]
     ],
     "extra": {
       "eas": {
