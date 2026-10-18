@@ -12,6 +12,7 @@ import HorariosScreen from '../src/screens/horarios/HorariosScreen';
 import PerfilScreen from '../src/screens/perfil/PerfilScreen';
 import ChatbotScreen from '../src/screens/chat/ChatbotScreen';
 import BottomNav from '../src/components/shared/BottomNav';
+import AdBannerMobile from '../src/components/ui/AdBannerMobile';
 
 export type AppStackParamList = {
   Home: undefined;
@@ -23,12 +24,13 @@ export type AppStackParamList = {
   ChatbotIA: undefined;
 };
 
-// Wrapper que agrega el BottomNav flotante por encima de cada pantalla
+// Wrapper que agrega el AdBannerMobile y BottomNav flotante por encima de cada pantalla
 function withBottomNav(Screen: React.ComponentType<any>, route: string) {
   return function WrappedScreen(props: any) {
     return (
       <View style={{ flex: 1 }}>
         <Screen {...props} />
+        <AdBannerMobile />
         <BottomNav activeRoute={route} />
       </View>
     );
