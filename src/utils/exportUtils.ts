@@ -1,6 +1,8 @@
 import { Share, Alert, Platform } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as XLSX from 'xlsx';
 
 interface Alumno {
   id: number;
@@ -405,6 +407,219 @@ export async function exportarCalificacionesPdf(
 }
 
 /**
+ * Genera y exporta la Planilla de Calificaciones en formato Excel real (.xlsx).
+ * Compatible con Microsoft Excel, Google Sheets, LibreOffice y apps móviles.
+ */
+export async function exportarCalificacionesExcelXlsx(
+  curso: CursoInfo,
+  inscripciones: Inscripcion[],
+  calificaciones: Calificacion[]
+) {
+  try {
+    const ordenados = [...inscripciones].sort((a, b) =>
+      (a.alumno?.apellido || '').localeCompare(b.alumno?.apellido || '')
+    );
+
+    const rows: any[][] = [];
+    rows.push(['ORGANIZADOR DOCENTE — PLANILLA OFICIAL DE CALIFICACIONES']);
+    rows.push([
+      `Institución: ${curso.escuela || 'Sin especificar'}`,
+      `Año: ${curso.anio}°`,
+      `Materia: ${curso.materia}`,
+      `Fecha de exportación: ${new Date().toLocaleDateString('es-AR')}`,
+    ]);
+    rows.push([]);
+    rows.push([
+      'N°',
+      'Apellido y Nombre',
+      'DNI',
+      'Notas 1° Trimestre',
+      'Notas 2° Trimestre',
+      'Notas 3° Trimestre',
+      'Promedio General',
+      'Condición Académica',
+    ]);
+
+    ordenados.forEach((insc, idx) => {
+      const notas = calificaciones.filter((c) => c.alumnoCursoId === insc.id);
+
+      const n1 =
+        notas
+          .filter((c) => Number(c.trimestre) === 1 && Number(c.valor) > 0)
+          .map((c) => c.valor)
+          .join(' - ') || '-';
+      const n2 =
+        notas
+          .filter((c) => Number(c.trimestre) === 2 && Number(c.valor) > 0)
+          .map((c) => c.valor)
+          .join(' - ') || '-';
+      const n3 =
+        notas
+          .filter((c) => Number(c.trimestre) === 3 && Number(c.valor) > 0)
+          .map((c) => c.valor)
+          .join(' - ') || '-';
+
+      const todasNotas = notas
+        .filter((c) => Number(c.valor) > 0)
+        .map((c) => Number(c.valor));
+      const prom =
+        todasNotas.length > 0
+          ? (todasNotas.reduce((a, b) => a + b, 0) / todasNotas.length).toFixed(2)
+          : '-';
+
+      const condicion =
+        prom === '-'
+          ? 'Sin notas'
+          : parseFloat(prom) >= 7
+          ? 'Aprobado'
+          : parseFloat(prom) >= 6
+          ? 'Aprobado (Justo)'
+          : 'En Proceso';
+
+      rows.push([
+        idx + 1,
+        `${insc.alumno?.apellido?.toUpperCase() || ''}, ${insc.alumno?.nombre || ''}`,
+        insc.alumno?.dni || '',
+        n1,
+        n2,
+        n3,
+        prom !== '-' ? parseFloat(prom) : '-',
+        condicion,
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 5 },
+      { wch: 32 },
+      { wch: 14 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 20 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Calificaciones');
+
+    const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+    const filename = `Calificaciones_${curso.materia}_${curso.anio}.xlsx`.replace(/\s+/g, '_');
+    const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+    await FileSystem.writeAsStringAsync(fileUri, wbout, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(fileUri, {
+        UTI: 'com.microsoft.excel.xlsx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        dialogTitle: filename,
+      });
+    } else {
+      await Share.share({ title: filename, url: fileUri });
+    }
+  } catch (e: any) {
+    console.error('Error al exportar Excel .xlsx de calificaciones:', e);
+    // Fallback limpio a CSV si el dispositivo tiene alguna restricción de almacenamiento
+    exportarCalificacionesCsv(curso, inscripciones, calificaciones);
+  }
+}
+
+/**
+ * Genera y exporta la Sábana de Asistencias en formato Excel real (.xlsx).
+ */
+export async function exportarAsistenciasExcelXlsx(
+  curso: CursoInfo,
+  inscripciones: Inscripcion[],
+  asistencias: Asistencia[]
+) {
+  try {
+    const fechas = Array.from(
+      new Set(asistencias.map((a) => a.fecha.split('T')[0]))
+    ).sort();
+
+    const ordenados = [...inscripciones].sort((a, b) =>
+      (a.alumno?.apellido || '').localeCompare(b.alumno?.apellido || '')
+    );
+
+    const rows: any[][] = [];
+    rows.push(['ORGANIZADOR DOCENTE — REGISTRO DE ASISTENCIAS']);
+    rows.push([
+      `Institución: ${curso.escuela || 'Sin especificar'}`,
+      `Año: ${curso.anio}°`,
+      `Materia: ${curso.materia}`,
+      `Fecha de exportación: ${new Date().toLocaleDateString('es-AR')}`,
+    ]);
+    rows.push([]);
+
+    // Fila de encabezados con fechas dinámicas
+    const headers = ['N°', 'Apellido y Nombre', 'DNI', ...fechas, 'Total Presentes', 'Total Clases', '% Asistencia'];
+    rows.push(headers);
+
+    ordenados.forEach((insc, idx) => {
+      const asisAlumno = asistencias.filter((a) => a.alumnoCursoId === insc.id);
+      const presentes = asisAlumno.filter(
+        (a) => a.estado === 'presente' || a.estado.startsWith('presente_')
+      ).length;
+      const total = asisAlumno.length;
+      const pct = total > 0 ? Math.round((presentes / total) * 100) : 0;
+
+      const estadosFila = fechas.map((f) => {
+        const found = asisAlumno.find((a) => a.fecha.startsWith(f));
+        if (!found) return '-';
+        if (found.estado === 'presente' || found.estado.startsWith('presente_')) return 'P';
+        if (found.estado === 'ausente') return 'A';
+        if (found.estado === 'media_falta') return '1/2';
+        if (found.estado === 'justificada') return 'J';
+        return found.estado;
+      });
+
+      rows.push([
+        idx + 1,
+        `${insc.alumno?.apellido?.toUpperCase() || ''}, ${insc.alumno?.nombre || ''}`,
+        insc.alumno?.dni || '',
+        ...estadosFila,
+        presentes,
+        total,
+        `${pct}%`,
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const colWidths = [{ wch: 5 }, { wch: 32 }, { wch: 14 }];
+    fechas.forEach(() => colWidths.push({ wch: 12 }));
+    colWidths.push({ wch: 16 }, { wch: 14 }, { wch: 14 });
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Asistencias');
+
+    const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+    const filename = `Asistencias_${curso.materia}_${curso.anio}.xlsx`.replace(/\s+/g, '_');
+    const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+    await FileSystem.writeAsStringAsync(fileUri, wbout, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(fileUri, {
+        UTI: 'com.microsoft.excel.xlsx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        dialogTitle: filename,
+      });
+    } else {
+      await Share.share({ title: filename, url: fileUri });
+    }
+  } catch (e: any) {
+    console.error('Error al exportar Excel .xlsx de asistencias:', e);
+    exportarAsistenciasCsv(curso, inscripciones, asistencias);
+  }
+}
+
+/**
  * Exporta las asistencias en formato CSV / Texto de respaldo.
  */
 export async function exportarAsistenciasCsv(
@@ -501,7 +716,7 @@ export async function exportarCalificacionesCsv(
 }
 
 /**
- * Genera y comparte el Informe Pedagógico en texto plano (fallback).
+ * Genera y comparte el Informe Pedagógico.
  */
 export async function exportarInformePedagogico(
   curso: CursoInfo,
@@ -509,6 +724,5 @@ export async function exportarInformePedagogico(
   asistencias: Asistencia[],
   calificaciones: Calificacion[]
 ) {
-  // Ahora por defecto llama al generador oficial de PDF para una experiencia premium
   return exportarInformePedagogicoPdf(curso, inscripciones, asistencias, calificaciones);
 }

@@ -29,6 +29,8 @@ import {
   exportarInformePedagogico,
   exportarInformePedagogicoPdf,
   exportarCalificacionesPdf,
+  exportarCalificacionesExcelXlsx,
+  exportarAsistenciasExcelXlsx,
 } from '../../utils/exportUtils';
 import { COLORS, RADIUS, SPACING, NEU } from '../../theme';
 import type { AppStackParamList } from '../../../navigation/AppNavigator';
@@ -489,7 +491,7 @@ export default function CursoDetalleScreen() {
     if (!curso) return;
     setDescargandoExcel(true);
     try {
-      await exportarCalificacionesCsv(
+      await exportarCalificacionesExcelXlsx(
         { materia: curso.materia, anio: String(curso.anio), escuela: curso.escuela },
         inscripciones,
         calificaciones
@@ -504,7 +506,7 @@ export default function CursoDetalleScreen() {
   const handleExportarAsistencias = async () => {
     if (!curso) return;
     try {
-      await exportarAsistenciasCsv(
+      await exportarAsistenciasExcelXlsx(
         { materia: curso.materia, anio: String(curso.anio), escuela: curso.escuela },
         inscripciones,
         asistencias
@@ -1990,12 +1992,12 @@ export default function CursoDetalleScreen() {
               <Ionicons name="share-outline" size={18} color={COLORS.accent} />
             </TouchableOpacity>
 
-            {/* Opción 3: Excel Asistencias */}
+            {/* Opción 3: Excel Oficial de Asistencias (.xlsx) */}
             <TouchableOpacity
               style={s.opcionDescargaCard}
               onPress={() => {
                 setMenuDescargasAbierto(false);
-                exportarAsistenciasCsv(
+                exportarAsistenciasExcelXlsx(
                   { materia: curso?.materia || '', anio: curso?.anio || '', escuela: curso?.escuela || '' },
                   inscripciones,
                   asistencias
@@ -2004,21 +2006,21 @@ export default function CursoDetalleScreen() {
               activeOpacity={0.8}
             >
               <View style={[s.opcionIconBox, { backgroundColor: '#dcfce7' }]}>
-                <Ionicons name="document-text" size={20} color="#059669" />
+                <Ionicons name="grid" size={20} color="#059669" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.opcionTitulo}>Excel / CSV de Asistencias</Text>
-                <Text style={s.opcionSub}>Registro diario y porcentajes de asistencia</Text>
+                <Text style={s.opcionTitulo}>Excel de Asistencias (.xlsx)</Text>
+                <Text style={s.opcionSub}>Sábana completa con fechas, presentes y %</Text>
               </View>
               <Ionicons name="share-outline" size={18} color={COLORS.accent} />
             </TouchableOpacity>
 
-            {/* Opción 4: Excel Calificaciones */}
+            {/* Opción 4: Excel Oficial de Calificaciones (.xlsx) */}
             <TouchableOpacity
               style={s.opcionDescargaCard}
               onPress={() => {
                 setMenuDescargasAbierto(false);
-                exportarCalificacionesCsv(
+                exportarCalificacionesExcelXlsx(
                   { materia: curso?.materia || '', anio: curso?.anio || '', escuela: curso?.escuela || '' },
                   inscripciones,
                   calificaciones
@@ -2030,8 +2032,8 @@ export default function CursoDetalleScreen() {
                 <Ionicons name="school" size={20} color="#6d28d9" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.opcionTitulo}>Excel / CSV de Calificaciones</Text>
-                <Text style={s.opcionSub}>Planilla de cálculo para abrir en Excel de PC</Text>
+                <Text style={s.opcionTitulo}>Excel de Calificaciones (.xlsx)</Text>
+                <Text style={s.opcionSub}>Planilla de cálculo con notas trimestrales y promedios</Text>
               </View>
               <Ionicons name="share-outline" size={18} color={COLORS.accent} />
             </TouchableOpacity>
