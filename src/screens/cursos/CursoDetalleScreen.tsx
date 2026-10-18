@@ -27,6 +27,8 @@ import {
   exportarAsistenciasCsv,
   exportarCalificacionesCsv,
   exportarInformePedagogico,
+  exportarInformePedagogicoPdf,
+  exportarCalificacionesPdf,
 } from '../../utils/exportUtils';
 import { COLORS, RADIUS, SPACING, NEU } from '../../theme';
 import type { AppStackParamList } from '../../../navigation/AppNavigator';
@@ -1348,23 +1350,39 @@ export default function CursoDetalleScreen() {
             {/* Botones de Descarga / Exportación */}
             <View style={s.plExportRow}>
               <TouchableOpacity
+                style={[s.plExportBtnPdf, { backgroundColor: '#7c3aed', borderColor: '#6d28d9' }]}
+                onPress={() => {
+                  if (!curso) return;
+                  exportarInformePedagogicoPdf(
+                    { materia: curso.materia, anio: String(curso.anio), escuela: curso.escuela },
+                    inscripciones,
+                    asistencias,
+                    calificaciones
+                  );
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="document-text" size={15} color="#ffffff" />
+                <Text style={[s.plExportBtnTextPdf, { color: '#ffffff', fontWeight: '800' }]}>Informe PDF</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={s.plExportBtnExcel}
                 onPress={handleExportarExcel}
                 disabled={descargandoExcel}
                 activeOpacity={0.8}
               >
-                <Ionicons name="document-text-outline" size={15} color="#047857" />
+                <Ionicons name="grid-outline" size={15} color="#047857" />
                 <Text style={s.plExportBtnTextExcel}>
-                  {descargandoExcel ? 'Generando...' : 'Descargar Excel'}
+                  {descargandoExcel ? 'Generando...' : 'Excel / CSV'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={s.plExportBtnPdf}
-                onPress={handleExportarAsistencias}
+                onPress={() => setMenuDescargasAbierto(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="calendar-outline" size={15} color="#4338ca" />
-                <Text style={s.plExportBtnTextPdf}>Descargar Asistencias</Text>
+                <Ionicons name="options-outline" size={15} color="#4338ca" />
+                <Text style={s.plExportBtnTextPdf}>Más Opciones</Text>
               </TouchableOpacity>
             </View>
 
@@ -1920,7 +1938,59 @@ export default function CursoDetalleScreen() {
 
             <Text style={s.descargasModalSub}>Elegí el formato o informe para compartir / guardar:</Text>
 
-            {/* Opción 1: Excel Asistencias */}
+            {/* Opción 1 (DESTACADA): Informe Pedagógico Completo en PDF */}
+            <TouchableOpacity
+              style={[s.opcionDescargaCard, { borderColor: '#7c3aed', borderWidth: 1.5, backgroundColor: '#faf5ff' }]}
+              onPress={() => {
+                setMenuDescargasAbierto(false);
+                exportarInformePedagogicoPdf(
+                  { materia: curso?.materia || '', anio: curso?.anio || '', escuela: curso?.escuela || '' },
+                  inscripciones,
+                  asistencias,
+                  calificaciones
+                );
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={[s.opcionIconBox, { backgroundColor: '#7c3aed' }]}>
+                <Ionicons name="document" size={20} color="#ffffff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[s.opcionTitulo, { color: '#581c87', fontWeight: '800' }]}>Informe Pedagógico en PDF</Text>
+                  <View style={{ backgroundColor: '#e9d5ff', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                    <Text style={{ fontSize: 8.5, fontWeight: '800', color: '#6b21a8' }}>OFICIAL</Text>
+                  </View>
+                </View>
+                <Text style={s.opcionSub}>Boletín A4 listo para imprimir o enviar por WhatsApp</Text>
+              </View>
+              <Ionicons name="share-outline" size={18} color="#7c3aed" />
+            </TouchableOpacity>
+
+            {/* Opción 2: Calificaciones en PDF */}
+            <TouchableOpacity
+              style={s.opcionDescargaCard}
+              onPress={() => {
+                setMenuDescargasAbierto(false);
+                exportarCalificacionesPdf(
+                  { materia: curso?.materia || '', anio: curso?.anio || '', escuela: curso?.escuela || '' },
+                  inscripciones,
+                  calificaciones
+                );
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={[s.opcionIconBox, { backgroundColor: '#fee2e2' }]}>
+                <Ionicons name="newspaper-outline" size={20} color="#dc2626" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.opcionTitulo}>Planilla de Calificaciones en PDF</Text>
+                <Text style={s.opcionSub}>Notas por trimestre y promedios listos para imprimir</Text>
+              </View>
+              <Ionicons name="share-outline" size={18} color={COLORS.accent} />
+            </TouchableOpacity>
+
+            {/* Opción 3: Excel Asistencias */}
             <TouchableOpacity
               style={s.opcionDescargaCard}
               onPress={() => {
@@ -1943,7 +2013,7 @@ export default function CursoDetalleScreen() {
               <Ionicons name="share-outline" size={18} color={COLORS.accent} />
             </TouchableOpacity>
 
-            {/* Opción 2: Excel Calificaciones */}
+            {/* Opción 4: Excel Calificaciones */}
             <TouchableOpacity
               style={s.opcionDescargaCard}
               onPress={() => {
@@ -1961,31 +2031,7 @@ export default function CursoDetalleScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.opcionTitulo}>Excel / CSV de Calificaciones</Text>
-                <Text style={s.opcionSub}>Planilla con notas por trimestre y promedios</Text>
-              </View>
-              <Ionicons name="share-outline" size={18} color={COLORS.accent} />
-            </TouchableOpacity>
-
-            {/* Opción 3: Informe Pedagógico */}
-            <TouchableOpacity
-              style={s.opcionDescargaCard}
-              onPress={() => {
-                setMenuDescargasAbierto(false);
-                exportarInformePedagogico(
-                  { materia: curso?.materia || '', anio: curso?.anio || '', escuela: curso?.escuela || '' },
-                  inscripciones,
-                  asistencias,
-                  calificaciones
-                );
-              }}
-              activeOpacity={0.8}
-            >
-              <View style={[s.opcionIconBox, { backgroundColor: '#ffe4e6' }]}>
-                <Ionicons name="newspaper" size={20} color="#e11d48" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.opcionTitulo}>Informe Pedagógico Completo</Text>
-                <Text style={s.opcionSub}>Boletín listo para compartir o imprimir</Text>
+                <Text style={s.opcionSub}>Planilla de cálculo para abrir en Excel de PC</Text>
               </View>
               <Ionicons name="share-outline" size={18} color={COLORS.accent} />
             </TouchableOpacity>
