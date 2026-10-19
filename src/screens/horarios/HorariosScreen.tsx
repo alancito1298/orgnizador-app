@@ -9,6 +9,8 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -492,7 +494,10 @@ export default function HorariosScreen() {
 
       {/* ── MODAL AGREGAR HORARIO ── */}
       <Modal visible={modalAgregar} transparent animationType="slide" onRequestClose={() => setModalAgregar(false)}>
-        <View style={m.overlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={m.overlay}
+        >
           <View style={m.sheet}>
             <View style={m.head}>
               <Text style={m.title}>+ Nueva Clase</Text>
@@ -501,69 +506,75 @@ export default function HorariosScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Selector de Día en el Modal */}
-            <View style={{ marginBottom: 4 }}>
-              <Text style={s.labelChips}>Día de la semana:</Text>
-              <View style={{ flexDirection: 'row', gap: 6 }}>
-                {DIAS.map((d) => {
-                  const isSel = diaModal === d;
-                  return (
-                    <TouchableOpacity
-                      key={d}
-                      style={[s.diaModalChip, isSel && s.diaModalChipActive]}
-                      onPress={() => setDiaModal(d)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[s.diaModalChipText, isSel && s.diaModalChipTextActive]}>
-                        {DIAS_ABREV[d]}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={m.scrollContent}
+            >
+              {/* Selector de Día en el Modal */}
+              <View style={{ marginBottom: 4 }}>
+                <Text style={s.labelChips}>Día de la semana:</Text>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {DIAS.map((d) => {
+                    const isSel = diaModal === d;
+                    return (
+                      <TouchableOpacity
+                        key={d}
+                        style={[s.diaModalChip, isSel && s.diaModalChipActive]}
+                        onPress={() => setDiaModal(d)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[s.diaModalChipText, isSel && s.diaModalChipTextActive]}>
+                          {DIAS_ABREV[d]}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
-            </View>
 
-            <View style={s.horaInputsRow}>
-              <View style={{ flex: 1 }}>
-                <AppInput label="Desde *" value={horaInicio} onChangeText={setHoraInicio} placeholder="08:00" />
+              <View style={s.horaInputsRow}>
+                <View style={{ flex: 1 }}>
+                  <AppInput label="Desde *" value={horaInicio} onChangeText={setHoraInicio} placeholder="08:00" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <AppInput label="Hasta *" value={horaFin} onChangeText={setHoraFin} placeholder="09:20" />
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <AppInput label="Hasta *" value={horaFin} onChangeText={setHoraFin} placeholder="09:20" />
+
+              {/* Cursos existentes como chips rápidos */}
+              {cursos.length > 0 && (
+                <View style={{ marginBottom: 8 }}>
+                  <Text style={s.labelChips}>Autocompletar desde curso:</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 42 }}>
+                    {cursos.map((cu) => (
+                      <TouchableOpacity
+                        key={cu.id}
+                        style={s.chipCurso}
+                        onPress={() => {
+                          setMateriaInput(cu.materia);
+                          setCursoInput(cu.anio);
+                          setEscuelaInput(cu.escuela);
+                        }}
+                      >
+                        <Text style={s.chipCursoText}>{cu.materia} ({formatAnio(cu.anio)})</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              <AppInput label="Materia *" value={materiaInput} onChangeText={setMateriaInput} placeholder="Ej: Matemática" />
+              <AppInput label="Año / División" value={cursoInput} onChangeText={setCursoInput} placeholder="Ej: 1° 2da" />
+              <AppInput label="Escuela / Institución" value={escuelaInput} onChangeText={setEscuelaInput} placeholder="Ej: E.E.S. N°12" />
+
+              <View style={m.actions}>
+                <AppButton label="Cancelar" variant="outline" onPress={() => setModalAgregar(false)} style={{ flex: 1 }} />
+                <AppButton label={guardando ? 'Guardando...' : 'Guardar Horario'} onPress={handleGuardarHorario} loading={guardando} style={{ flex: 1 }} />
               </View>
-            </View>
-
-            {/* Cursos existentes como chips rápidos */}
-            {cursos.length > 0 && (
-              <View style={{ marginBottom: 8 }}>
-                <Text style={s.labelChips}>Autocompletar desde curso:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 42 }}>
-                  {cursos.map((cu) => (
-                    <TouchableOpacity
-                      key={cu.id}
-                      style={s.chipCurso}
-                      onPress={() => {
-                        setMateriaInput(cu.materia);
-                        setCursoInput(cu.anio);
-                        setEscuelaInput(cu.escuela);
-                      }}
-                    >
-                      <Text style={s.chipCursoText}>{cu.materia} ({formatAnio(cu.anio)})</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-
-            <AppInput label="Materia *" value={materiaInput} onChangeText={setMateriaInput} placeholder="Ej: Matemática" />
-            <AppInput label="Año / División" value={cursoInput} onChangeText={setCursoInput} placeholder="Ej: 1° 2da" />
-            <AppInput label="Escuela / Institución" value={escuelaInput} onChangeText={setEscuelaInput} placeholder="Ej: E.E.S. N°12" />
-
-            <View style={m.actions}>
-              <AppButton label="Cancelar" variant="outline" onPress={() => setModalAgregar(false)} style={{ flex: 1 }} />
-              <AppButton label={guardando ? 'Guardando...' : 'Guardar Horario'} onPress={handleGuardarHorario} loading={guardando} style={{ flex: 1 }} />
-            </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -765,11 +776,13 @@ const m = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
-    padding: SPACING.xl,
-    gap: SPACING.sm,
-    maxHeight: '85%',
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.xl,
+    paddingBottom: SPACING.md,
+    maxHeight: '88%',
   },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.sm },
   title: { fontSize: 19, fontWeight: '800', color: COLORS.onSurface },
+  scrollContent: { gap: SPACING.sm, paddingBottom: 28 },
   actions: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md },
 });

@@ -273,7 +273,7 @@ export default function ModalEditarHorariosCurso({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={m.overlay}
       >
         <View style={m.sheet}>
@@ -502,6 +502,7 @@ const m = StyleSheet.create({
   },
   scrollContent: {
     padding: SPACING.lg,
+    paddingBottom: 40,
     gap: SPACING.md,
   },
   loadingBox: {
