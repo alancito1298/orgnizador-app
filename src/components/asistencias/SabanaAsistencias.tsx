@@ -18,6 +18,7 @@ import {
   exportarAsistenciasExcelXlsx,
   exportarInformePedagogicoPdf,
 } from '../../utils/exportUtils';
+import { useOfflineStore } from '../../utils/offlineSync';
 
 export type EstadoVisualAsistencia =
   | 'vacio'
@@ -407,7 +408,15 @@ export default function SabanaAsistencias({
       }
 
       setCambiosPendientes(new Set());
-      Alert.alert('¡Sábana Guardada!', `Se guardaron ${guardadosCount} registros de asistencia con éxito.`);
+      const isOff = useOfflineStore.getState().isOffline;
+      if (isOff) {
+        Alert.alert(
+          '¡Guardado Localmente!',
+          `Se guardaron ${guardadosCount} registros en el celular. Se sincronizarán automáticamente con la nube cuando recuperes señal.`
+        );
+      } else {
+        Alert.alert('¡Sábana Guardada!', `Se guardaron ${guardadosCount} registros de asistencia con éxito.`);
+      }
       onAsistenciasUpdated?.();
     } catch (err) {
       Alert.alert('Atención', 'Ocurrió un error al persistir algunas asistencias.');

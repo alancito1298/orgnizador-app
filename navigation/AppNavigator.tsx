@@ -14,6 +14,7 @@ import ChatbotScreen from '../src/screens/chat/ChatbotScreen';
 import PlanesScreen from '../src/screens/planes/PlanesScreen';
 import BottomNav from '../src/components/shared/BottomNav';
 import AdBannerMobile from '../src/components/ui/AdBannerMobile';
+import OfflineBanner from '../src/components/ui/OfflineBanner';
 
 export type AppStackParamList = {
   Home: undefined;
@@ -31,6 +32,7 @@ function withBottomNav(Screen: React.ComponentType<any>, route: string) {
   return function WrappedScreen(props: any) {
     return (
       <View style={{ flex: 1 }}>
+        <OfflineBanner />
         <Screen {...props} />
         <AdBannerMobile />
         <BottomNav activeRoute={route} />

@@ -9,8 +9,10 @@ import AppNavigator from './navigation/AppNavigator';
 import { useAuthStore } from './src/store/authStore';
 import { COLORS } from './src/theme';
 import { initSentry, Sentry } from './src/utils/sentry';
+import { initOfflineSyncMonitor } from './src/utils/offlineSync';
 
 initSentry();
+initOfflineSyncMonitor();
 
 function App() {
   const { token, isLoading, loadToken } = useAuthStore();
