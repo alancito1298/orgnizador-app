@@ -273,6 +273,19 @@ export default function PerfilScreen() {
               </Text>
             </View>
           </View>
+
+          {/* Botón Ver Planes / Mejorar */}
+          <TouchableOpacity
+            style={styles.verPlanesBtn}
+            onPress={() => navigation.navigate('Planes')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="sparkles" size={16} color="#ffffff" />
+            <Text style={styles.verPlanesBtnText}>
+              {esSuscripcionActiva ? 'Gestionar / Ver Planes' : '⭐ Cambiar a Plan Plus'}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#ffffff" style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
         </View>
 
         {/* ── SECCIÓN MÉTRICAS GLOBALES (Grid 2x2 Fiel al web PerfilResumen) ── */}
@@ -580,6 +593,26 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.md,
     fontWeight: '800',
     color: COLORS.onSurface,
+  },
+  verPlanesBtn: {
+    marginTop: SPACING.md,
+    backgroundColor: '#7c3aed',
+    borderRadius: RADIUS.lg,
+    paddingVertical: 12,
+    paddingHorizontal: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  verPlanesBtnText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '700',
+    color: '#ffffff',
   },
 
   // ── SECCIÓN MÉTRICAS GLOBALES ──

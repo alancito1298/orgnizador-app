@@ -11,6 +11,7 @@ import AgendaScreen from '../src/screens/agenda/AgendaScreen';
 import HorariosScreen from '../src/screens/horarios/HorariosScreen';
 import PerfilScreen from '../src/screens/perfil/PerfilScreen';
 import ChatbotScreen from '../src/screens/chat/ChatbotScreen';
+import PlanesScreen from '../src/screens/planes/PlanesScreen';
 import BottomNav from '../src/components/shared/BottomNav';
 import AdBannerMobile from '../src/components/ui/AdBannerMobile';
 
@@ -22,6 +23,7 @@ export type AppStackParamList = {
   Horario: undefined;
   Perfil: undefined;
   ChatbotIA: undefined;
+  Planes: undefined;
 };
 
 // Wrapper que agrega el AdBannerMobile y BottomNav flotante por encima de cada pantalla
@@ -86,6 +88,10 @@ export default function AppNavigator() {
       <Stack.Screen
         name="ChatbotIA"
         component={withBottomNav(ChatbotScreen, 'ChatbotIA')}
+      />
+      <Stack.Screen
+        name="Planes"
+        component={withBottomNav(PlanesScreen, 'Perfil')}
       />
     </Stack.Navigator>
   );

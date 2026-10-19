@@ -115,7 +115,7 @@ export default function AdBannerMobile() {
 
   const handleGoToPremium = () => {
     try {
-      navigation.navigate('Perfil');
+      navigation.navigate('Planes');
     } catch {}
   };
 
