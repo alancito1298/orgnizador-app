@@ -23,6 +23,7 @@ import ImportarAlumnosModal from '../../components/alumnos/ImportarAlumnosModal'
 import PasoConceptoModal from '../../components/alumnos/PasoConceptoModal';
 import PasoCalificacionModal from '../../components/alumnos/PasoCalificacionModal';
 import ModalEditarHorariosCurso from '../../components/cursos/ModalEditarHorariosCurso';
+import SabanaAsistencias from '../../components/asistencias/SabanaAsistencias';
 import {
   exportarAsistenciasCsv,
   exportarCalificacionesCsv,
@@ -786,7 +787,7 @@ export default function CursoDetalleScreen() {
               <View style={s.asistenciaIconBox}>
                 <Ionicons name="checkmark-done" size={18} color="#fff" />
               </View>
-              <Text style={s.btnPasarAsistenciaText}>PASAR ASISTENCIA</Text>
+              <Text style={s.btnPasarAsistenciaText}>SÁBANA DE ASISTENCIA</Text>
             </View>
 
             {estadoAsistenciaHoy === 'cargadas' && (
@@ -1005,7 +1006,7 @@ export default function CursoDetalleScreen() {
           >
             <Ionicons name="checkbox" size={16} color={activeTab === 'asistencia' ? COLORS.accent : COLORS.secondary} />
             <Text style={[s.tabButtonText, activeTab === 'asistencia' && s.tabButtonTextActive]}>
-              Asistencia
+              Sábana Asist.
             </Text>
           </TouchableOpacity>
 
@@ -1172,68 +1173,21 @@ export default function CursoDetalleScreen() {
           </View>
         )}
 
-        {/* ── CONTENIDO: TAB 2 ASISTENCIA ── */}
+        {/* ── CONTENIDO: TAB 2 ASISTENCIA (SÁBANA DE ASISTENCIAS) ── */}
         {activeTab === 'asistencia' && (
           <View style={s.tabSection}>
-            <View style={s.asistenciaHeaderCard}>
-              <View style={s.asistenciaDateRow}>
-                <Ionicons name="today-outline" size={18} color={COLORS.accent} />
-                <Text style={s.asistenciaDateText}>Fecha: {fechaAsistencia}</Text>
-              </View>
-
-              <TouchableOpacity
-                style={s.todosPresentesBtn}
-                onPress={() => {
-                  const m: Record<number, string> = {};
-                  inscripciones.forEach((i) => { m[i.id] = 'presente'; });
-                  setAsistenciasHoy(m);
-                }}
-              >
-                <Ionicons name="checkmark-done" size={14} color={COLORS.accent} />
-                <Text style={s.todosPresentesText}>Todos Presentes</Text>
-              </TouchableOpacity>
-            </View>
-
-            {inscripciones.map((insc) => {
-              const estado = asistenciasHoy[insc.id] || 'presente';
-              return (
-                <View key={insc.id} style={s.asistenciaRowCard}>
-                  <Text style={s.asistenciaNombre} numberOfLines={1}>
-                    {insc.alumno?.apellido}, {insc.alumno?.nombre}
-                  </Text>
-                  <View style={s.asistenciaPillsGroup}>
-                    {ESTADOS_ASISTENCIA.map((est) => {
-                      const sel = estado === est.key;
-                      return (
-                        <TouchableOpacity
-                          key={est.key}
-                          style={[
-                            s.asistenciaPill,
-                            sel && { backgroundColor: est.color, borderColor: est.color },
-                          ]}
-                          onPress={() => setAsistenciasHoy((p) => ({ ...p, [insc.id]: est.key }))}
-                        >
-                          <Text style={[s.asistenciaPillText, sel && { color: '#fff', fontWeight: '800' }]}>
-                            {est.label}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              );
-            })}
-
-            <TouchableOpacity
-              style={s.guardarAsistenciaBigBtn}
-              onPress={handleGuardarAsistencia}
-              disabled={guardandoAsistencia}
-            >
-              <Ionicons name="save-outline" size={18} color="#fff" />
-              <Text style={s.guardarAsistenciaBigText}>
-                {guardandoAsistencia ? 'Guardando...' : 'Guardar Asistencias'}
-              </Text>
-            </TouchableOpacity>
+            <SabanaAsistencias
+              curso={{
+                id: cursoId,
+                materia: curso?.materia || '',
+                anio: curso?.anio || '',
+                escuela: curso?.escuela || '',
+              }}
+              inscripciones={inscripciones}
+              asistencias={asistencias}
+              onAsistenciasUpdated={cargarDatos}
+              trimestreInicial={trimestre}
+            />
           </View>
         )}
 
