@@ -54,7 +54,15 @@
           "iosUrlScheme": "com.googleusercontent.apps.868455775736-8gvm8ad8kdj0206iifc2qka0043c5s46"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

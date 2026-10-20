@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
+  Text as RNText,
+  type TextProps,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -11,6 +12,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+
+const Text = (props: TextProps) => <RNText allowFontScaling={false} {...props} />;
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -22,6 +25,8 @@ import AppButton from '../../components/ui/AppButton';
 import ImportarAlumnosModal from '../../components/alumnos/ImportarAlumnosModal';
 import PasoConceptoModal from '../../components/alumnos/PasoConceptoModal';
 import PasoCalificacionModal from '../../components/alumnos/PasoCalificacionModal';
+import PasoAsistenciaModal from '../../components/alumnos/PasoAsistenciaModal';
+import PerfilAlumnoModal from '../../components/alumnos/PerfilAlumnoModal';
 import ModalEditarHorariosCurso from '../../components/cursos/ModalEditarHorariosCurso';
 import SabanaAsistencias from '../../components/asistencias/SabanaAsistencias';
 import {
@@ -121,6 +126,20 @@ export default function CursoDetalleScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Scroll ref y posición para navegación fluida
+  const mainScrollRef = useRef<ScrollView>(null);
+  const [tabsY, setTabsY] = useState(0);
+
+  const irAPlanilla = useCallback(() => {
+    setActiveTab('planilla');
+    setTimeout(() => {
+      mainScrollRef.current?.scrollTo({
+        y: tabsY > 0 ? tabsY - 10 : 540,
+        animated: true,
+      });
+    }, 60);
+  }, [tabsY]);
+
   // Datos
   const [inscripciones, setInscripciones] = useState<Inscripcion[]>([]);
   const [asistencias, setAsistencias] = useState<Asistencia[]>([]);
@@ -153,10 +172,11 @@ export default function CursoDetalleScreen() {
   const [valorNota, setValorNota] = useState('');
   const [guardandoNota, setGuardandoNota] = useState(false);
 
-  // Modales de Importación, Concepto, Calificación, Descargas y Horarios
+  // Modales de Importación, Concepto, Calificación, Asistencia, Descargas y Horarios
   const [importarModalAbierto, setImportarModalAbierto] = useState(false);
   const [conceptoModalAbierto, setConceptoModalAbierto] = useState(false);
   const [calificacionModalAbierto, setCalificacionModalAbierto] = useState(false);
+  const [asistenciaModalAbierto, setAsistenciaModalAbierto] = useState(false);
   const [menuDescargasAbierto, setMenuDescargasAbierto] = useState(false);
   const [modalEditarHorarios, setModalEditarHorarios] = useState(false);
   const [modalCerrarTrimestre, setModalCerrarTrimestre] = useState(false);
@@ -696,6 +716,7 @@ export default function CursoDetalleScreen() {
       </View>
 
       <ScrollView
+        ref={mainScrollRef}
         style={s.scroll}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
@@ -780,14 +801,14 @@ export default function CursoDetalleScreen() {
           {/* Botón principal Pasar Asistencia */}
           <TouchableOpacity
             style={s.btnPasarAsistencia}
-            onPress={() => setActiveTab('asistencia')}
+            onPress={() => setAsistenciaModalAbierto(true)}
             activeOpacity={0.88}
           >
             <View style={s.btnPasarAsistenciaLeft}>
               <View style={s.asistenciaIconBox}>
                 <Ionicons name="checkmark-done" size={18} color="#fff" />
               </View>
-              <Text style={s.btnPasarAsistenciaText}>SÁBANA DE ASISTENCIA</Text>
+              <Text style={s.btnPasarAsistenciaText}>PASAR ASISTENCIA</Text>
             </View>
 
             {estadoAsistenciaHoy === 'cargadas' && (
@@ -861,7 +882,7 @@ export default function CursoDetalleScreen() {
           {/* Fila 4: Ver Planillas */}
           <TouchableOpacity
             style={s.accionTile}
-            onPress={() => setActiveTab('planilla')}
+            onPress={irAPlanilla}
             activeOpacity={0.8}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -989,7 +1010,10 @@ export default function CursoDetalleScreen() {
         )}
 
         {/* ── SECCIÓN 4: PESTAÑAS SUB-MENÚ (Alumnos, Asistencia, Notas, Planilla) ── */}
-        <View style={s.tabsBar}>
+        <View
+          style={s.tabsBar}
+          onLayout={(e) => setTabsY(e.nativeEvent.layout.y)}
+        >
           <TouchableOpacity
             style={[s.tabButton, activeTab === 'alumnos' && s.tabButtonActive]}
             onPress={() => setActiveTab('alumnos')}
@@ -1176,6 +1200,26 @@ export default function CursoDetalleScreen() {
         {/* ── CONTENIDO: TAB 2 ASISTENCIA (SÁBANA DE ASISTENCIAS) ── */}
         {activeTab === 'asistencia' && (
           <View style={s.tabSection}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.onSurface, letterSpacing: 0.5 }}>
+                MATRIZ DE ASISTENCIAS
+              </Text>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: COLORS.accent,
+                  paddingHorizontal: 12,
+                  paddingVertical: 7,
+                  borderRadius: RADIUS.md,
+                }}
+                onPress={() => setAsistenciaModalAbierto(true)}
+              >
+                <Ionicons name="create-outline" size={14} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Cargar Fecha / Hoy</Text>
+              </TouchableOpacity>
+            </View>
             <SabanaAsistencias
               curso={{
                 id: cursoId,
@@ -1690,81 +1734,15 @@ export default function CursoDetalleScreen() {
       </ScrollView>
 
       {/* ── MODAL PERFIL DETALLADO DE ALUMNO (Fiel al web PerfilAlumnoModal) ── */}
-      <Modal visible={!!perfilAlumno} transparent animationType="slide" onRequestClose={() => setPerfilAlumno(null)}>
-        <View style={m.overlay}>
-          <View style={m.sheet}>
-            <View style={m.head}>
-              <Text style={m.title}>Perfil del Alumno</Text>
-              <TouchableOpacity onPress={() => setPerfilAlumno(null)}>
-                <Ionicons name="close" size={22} color={COLORS.secondary} />
-              </TouchableOpacity>
-            </View>
-
-            {perfilAlumno && (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={s.perfilAvatarBig}>
-                  <Text style={s.perfilAvatarBigText}>
-                    {`${(perfilAlumno.insc.alumno?.nombre || '')[0] || ''}${(perfilAlumno.insc.alumno?.apellido || '')[0] || ''}`.toUpperCase()}
-                  </Text>
-                </View>
-
-                <Text style={s.perfilNombreModal}>
-                  {perfilAlumno.insc.alumno?.apellido}, {perfilAlumno.insc.alumno?.nombre}
-                </Text>
-
-                {perfilAlumno.insc.alumno?.dni ? (
-                  <Text style={s.perfilDniModal}>DNI: {perfilAlumno.insc.alumno.dni}</Text>
-                ) : null}
-
-                {perfilAlumno.insc.alumno?.contacto ? (
-                  <Text style={s.perfilContactoModal}>📞 {perfilAlumno.insc.alumno.contacto}</Text>
-                ) : null}
-
-                {/* Métricas destacadas */}
-                <View style={s.perfilMetricsGrid}>
-                  <View style={s.perfilMetricBox}>
-                    <Text style={s.perfilMetricLabel}>Asistencia General</Text>
-                    <Text style={[s.perfilMetricVal, { color: '#059669' }]}>
-                      {perfilAlumno.stats.porcentaje !== null ? `${perfilAlumno.stats.porcentaje}%` : 'S/D'}
-                    </Text>
-                    <Text style={s.perfilMetricSub}>
-                      {perfilAlumno.stats.presentes} de {perfilAlumno.stats.total} clases
-                    </Text>
-                  </View>
-
-                  <View style={s.perfilMetricBox}>
-                    <Text style={s.perfilMetricLabel}>Promedio General</Text>
-                    <Text style={[s.perfilMetricVal, { color: COLORS.accent }]}>
-                      {perfilAlumno.stats.promedio ? `${perfilAlumno.stats.promedio}/10` : 'S/D'}
-                    </Text>
-                    <Text style={s.perfilMetricSub}>{perfilAlumno.stats.notas.length} notas cargadas</Text>
-                  </View>
-                </View>
-
-                {/* Notas por Trimestre */}
-                <Text style={s.perfilSubheading}>Calificaciones Registradas:</Text>
-                {perfilAlumno.stats.notas.length === 0 ? (
-                  <Text style={s.perfilEmptyText}>No hay notas cargadas para este alumno.</Text>
-                ) : (
-                  perfilAlumno.stats.notas.map((n: Calificacion) => (
-                    <View key={n.id} style={s.perfilNotaItem}>
-                      <View>
-                        <Text style={s.perfilNotaTipo}>{n.tipo}</Text>
-                        <Text style={s.perfilNotaFecha}>{n.trimestre}° Trimestre · {n.fecha.split('T')[0]}</Text>
-                      </View>
-                      <Text style={s.perfilNotaValor}>{n.valor}</Text>
-                    </View>
-                  ))
-                )}
-              </ScrollView>
-            )}
-
-            <View style={{ marginTop: SPACING.md }}>
-              <AppButton label="Cerrar" variant="outline" onPress={() => setPerfilAlumno(null)} />
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* ── MODAL PERFIL DETALLADO DE ALUMNO (ESTADÍSTICAS ESTILO PC) ── */}
+      <PerfilAlumnoModal
+        abierto={!!perfilAlumno}
+        inscripcion={perfilAlumno?.insc ?? null}
+        cursoInfo={curso}
+        asistenciasLocales={asistencias}
+        calificacionesLocales={calificaciones}
+        onCerrar={() => setPerfilAlumno(null)}
+      />
 
       {/* ── MODAL NUEVO / EDITAR ALUMNO ── */}
       <Modal visible={modalAlumno} transparent animationType="slide" onRequestClose={() => setModalAlumno(false)}>
@@ -1856,6 +1834,20 @@ export default function CursoDetalleScreen() {
         cursoId={cursoId}
         onCerrar={() => setImportarModalAbierto(false)}
         onImportados={cargarDatos}
+      />
+
+      {/* ── MODAL PASAR ASISTENCIA (RÁPIDO) ── */}
+      <PasoAsistenciaModal
+        abierto={asistenciaModalAbierto}
+        inscripciones={inscripciones}
+        cursoInfo={curso}
+        trimestre={trimestre}
+        onCerrar={() => setAsistenciaModalAbierto(false)}
+        onFinalizado={cargarDatos}
+        onVerSabana={() => {
+          setAsistenciaModalAbierto(false);
+          setActiveTab('asistencia');
+        }}
       />
 
       {/* ── MODAL EVALUAR CONCEPTO DIARIO (CARITAS) ── */}
@@ -1997,7 +1989,7 @@ export default function CursoDetalleScreen() {
               style={s.opcionDescargaCard}
               onPress={() => {
                 setMenuDescargasAbierto(false);
-                setActiveTab('planilla');
+                irAPlanilla();
               }}
               activeOpacity={0.8}
             >

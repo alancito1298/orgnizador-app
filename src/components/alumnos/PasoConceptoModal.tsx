@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
+  Text as RNText,
+  type TextProps,
   StyleSheet,
   Modal,
   TouchableOpacity,
   ScrollView,
   Alert,
 } from 'react-native';
+
+const Text = (props: TextProps) => <RNText allowFontScaling={false} {...props} />;
 import { Ionicons } from '@expo/vector-icons';
 import { apiFetch } from '../../api/client';
 import AppButton from '../ui/AppButton';

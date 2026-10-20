@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
-  Text,
+  Text as RNText,
+  type TextProps,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -10,6 +11,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+
+const Text = (props: TextProps) => <RNText allowFontScaling={false} {...props} />;
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { apiFetch } from '../../api/client';
