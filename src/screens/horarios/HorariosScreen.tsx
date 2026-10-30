@@ -20,6 +20,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { apiFetch } from '../../api/client';
 import AppInput from '../../components/ui/AppInput';
 import AppButton from '../../components/ui/AppButton';
+import { KeyboardModalContainer } from '../../components/ui/KeyboardModalContainer';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 import type { AppStackParamList } from '../../../navigation/AppNavigator';
 
@@ -156,6 +158,7 @@ function formatAnio(anio: string | undefined | null): string {
 
 export default function HorariosScreen() {
   const navigation = useNavigation<Nav>();
+  const { isKeyboardVisible, availableHeight } = useKeyboard();
 
   const [horarios, setHorarios] = useState<HorarioItem[]>([]);
   const [cursos, setCursos] = useState<Curso[]>([]);
@@ -494,11 +497,8 @@ export default function HorariosScreen() {
 
       {/* ── MODAL AGREGAR HORARIO ── */}
       <Modal visible={modalAgregar} transparent animationType="slide" onRequestClose={() => setModalAgregar(false)}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={m.overlay}
-        >
-          <View style={m.sheet}>
+        <KeyboardModalContainer style={m.overlay}>
+          <View style={[m.sheet, isKeyboardVisible && { maxHeight: availableHeight }]}>
             <View style={m.head}>
               <Text style={m.title}>+ Nueva Clase</Text>
               <TouchableOpacity onPress={() => setModalAgregar(false)}>
@@ -507,6 +507,7 @@ export default function HorariosScreen() {
             </View>
 
             <ScrollView
+              style={{ flexShrink: 1 }}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={m.scrollContent}
@@ -574,7 +575,7 @@ export default function HorariosScreen() {
               </View>
             </ScrollView>
           </View>
-        </KeyboardAvoidingView>
+        </KeyboardModalContainer>
       </Modal>
     </SafeAreaView>
   );

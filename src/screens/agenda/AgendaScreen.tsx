@@ -18,6 +18,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { apiFetch } from '../../api/client';
 import AppInput from '../../components/ui/AppInput';
 import AppButton from '../../components/ui/AppButton';
+import { KeyboardModalContainer } from '../../components/ui/KeyboardModalContainer';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 import type { AppStackParamList } from '../../../navigation/AppNavigator';
 
@@ -40,6 +42,7 @@ const toKey = (y: number, m: number, d: number) =>
 
 export default function AgendaScreen() {
   const navigation = useNavigation<Nav>();
+  const { isKeyboardVisible, availableHeight } = useKeyboard();
 
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -367,8 +370,8 @@ export default function AgendaScreen() {
 
       {/* ── MODAL AGREGAR EVENTO ── */}
       <Modal visible={modalAgregar} transparent animationType="slide" onRequestClose={() => setModalAgregar(false)}>
-        <View style={m.overlay}>
-          <View style={m.sheet}>
+        <KeyboardModalContainer style={m.overlay}>
+          <View style={[m.sheet, isKeyboardVisible && { maxHeight: availableHeight }]}>
             <View style={m.head}>
               <Text style={m.title}>+ Agendar para el {diaSeleccionado}</Text>
               <TouchableOpacity onPress={() => setModalAgregar(false)}>
@@ -376,21 +379,27 @@ export default function AgendaScreen() {
               </TouchableOpacity>
             </View>
 
-            <AppInput
-              label="Descripción del evento *"
-              value={descripcion}
-              onChangeText={setDescripcion}
-              placeholder="Ej: Entrega de TP N°2, Examen final, etc."
-              multiline
-              numberOfLines={3}
-            />
+            <ScrollView
+              style={{ flexShrink: 1 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <AppInput
+                label="Descripción del evento *"
+                value={descripcion}
+                onChangeText={setDescripcion}
+                placeholder="Ej: Entrega de TP N°2, Examen final, etc."
+                multiline
+                numberOfLines={3}
+              />
 
-            <View style={m.actions}>
-              <AppButton label="Cancelar" variant="outline" onPress={() => setModalAgregar(false)} style={{ flex: 1 }} />
-              <AppButton label={guardando ? 'Guardando...' : 'Agendar'} onPress={handleGuardarEvento} loading={guardando} style={{ flex: 1 }} />
-            </View>
+              <View style={m.actions}>
+                <AppButton label="Cancelar" variant="outline" onPress={() => setModalAgregar(false)} style={{ flex: 1 }} />
+                <AppButton label={guardando ? 'Guardando...' : 'Agendar'} onPress={handleGuardarEvento} loading={guardando} style={{ flex: 1 }} />
+              </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardModalContainer>
       </Modal>
 
       {/* ── MODAL VER EVENTOS DEL DÍA ── */}

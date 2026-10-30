@@ -13,11 +13,14 @@ import { useNavigation } from '@react-navigation/native';
 import AppInput from '../../components/ui/AppInput';
 import AppButton from '../../components/ui/AppButton';
 import AlertMessage from '../../components/ui/AlertMessage';
+import { KeyboardModalContainer } from '../../components/ui/KeyboardModalContainer';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { apiFetch } from '../../api/client';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
+  const { isKeyboardVisible } = useKeyboard();
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,12 +48,12 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardModalContainer style={styles.flex}>
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          isKeyboardVisible && { justifyContent: 'flex-start', paddingBottom: SPACING.xxl + 24 },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -104,7 +107,7 @@ export default function ForgotPasswordScreen() {
           />
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardModalContainer>
   );
 }
 

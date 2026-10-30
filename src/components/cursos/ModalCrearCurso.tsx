@@ -16,6 +16,8 @@ import { apiFetch } from '../../api/client';
 import AppInput from '../ui/AppInput';
 import AppButton from '../ui/AppButton';
 import AlertMessage from '../ui/AlertMessage';
+import { KeyboardModalContainer } from '../ui/KeyboardModalContainer';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 
 export interface Curso {
@@ -50,6 +52,7 @@ export default function ModalCrearCurso({
   onClose,
   onCreado,
 }: ModalCrearCursoProps) {
+  const { isKeyboardVisible, availableHeight } = useKeyboard();
   const [anio, setAnio] = useState('');
   const [escuela, setEscuela] = useState('');
   const [materia, setMateria] = useState('');
@@ -146,11 +149,16 @@ export default function ModalCrearCurso({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={mc.overlay}
-      >
-        <View style={mc.sheet}>
+      <KeyboardModalContainer style={mc.overlay}>
+        <View
+          style={[
+            mc.sheet,
+            isKeyboardVisible && {
+              maxHeight: availableHeight,
+              paddingBottom: SPACING.md,
+            },
+          ]}
+        >
           {/* Header */}
           <View style={mc.header}>
             <View style={mc.headerLeft}>
@@ -174,6 +182,7 @@ export default function ModalCrearCurso({
           </View>
 
           <ScrollView
+            style={{ flexShrink: 1 }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={mc.scrollContent}
@@ -351,7 +360,7 @@ export default function ModalCrearCurso({
             />
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardModalContainer>
     </Modal>
   );
 }

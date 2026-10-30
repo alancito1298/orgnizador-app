@@ -17,6 +17,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { apiFetch } from '../../api/client';
 import { COLORS, RADIUS, SPACING, FONT_SIZE } from '../../theme';
+import { KeyboardModalContainer } from '../ui/KeyboardModalContainer';
 import {
   exportarAsistenciasExcelXlsx,
   exportarInformePedagogicoPdf,
@@ -871,8 +872,8 @@ export default function SabanaAsistencias({
       </View>
 
       {/* ── MODAL AGREGAR FECHA ── */}
-      <Modal visible={modalNuevaFecha} transparent animationType="fade">
-        <View style={s.modalOverlay}>
+      <Modal visible={modalNuevaFecha} transparent animationType="fade" onRequestClose={() => setModalNuevaFecha(false)}>
+        <KeyboardModalContainer style={s.modalOverlay}>
           <View style={s.modalBox}>
             <View style={s.modalHeader}>
               <Ionicons name="calendar" size={22} color={COLORS.accent} />
@@ -926,7 +927,7 @@ export default function SabanaAsistencias({
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardModalContainer>
       </Modal>
 
       {/* ── MODAL PICKER DIRECTO DE ESTADO (LONG PRESS) ── */}

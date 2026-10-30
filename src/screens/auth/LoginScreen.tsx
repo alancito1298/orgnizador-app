@@ -17,6 +17,8 @@ import AppInput from '../../components/ui/AppInput';
 import AppButton from '../../components/ui/AppButton';
 import AlertMessage from '../../components/ui/AlertMessage';
 import GoogleButton from '../../components/ui/GoogleButton';
+import { KeyboardModalContainer } from '../../components/ui/KeyboardModalContainer';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 import type { AuthStackParamList } from '../../../navigation/AuthNavigator';
@@ -26,6 +28,7 @@ type Nav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 export default function LoginScreen() {
   const navigation = useNavigation<Nav>();
   const login = useAuthStore((s) => s.login);
+  const { isKeyboardVisible } = useKeyboard();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,12 +54,12 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardModalContainer style={styles.flex}>
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          isKeyboardVisible && { justifyContent: 'flex-start', paddingBottom: SPACING.xxl + 24 },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -148,7 +151,7 @@ export default function LoginScreen() {
           />
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardModalContainer>
   );
 }
 

@@ -19,6 +19,8 @@ import * as SecureStore from 'expo-secure-store';
 
 import { getToken } from '../../api/client';
 import { COLORS, RADIUS, SPACING, NEU } from '../../theme';
+import { KeyboardModalContainer } from '../../components/ui/KeyboardModalContainer';
+import { useKeyboard } from '../../hooks/useKeyboard';
 
 interface Message {
   id: string;
@@ -98,6 +100,15 @@ export default function ChatbotScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
+  const { isKeyboardVisible } = useKeyboard();
+
+  useEffect(() => {
+    if (isKeyboardVisible) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [isKeyboardVisible]);
 
   const [mensajes, setMensajes] = useState<Message[]>([
     {
@@ -287,11 +298,7 @@ export default function ChatbotScreen() {
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior="padding"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 60 : 80}
-      >
+      <KeyboardModalContainer style={{ flex: 1 }}>
         {/* ── LISTA DE MENSAJES ── */}
         {/* ── AVISO IA (Google Play AI Policy) ── */}
         <View style={s.aiDisclaimer}>
@@ -305,7 +312,10 @@ export default function ChatbotScreen() {
         <ScrollView
           ref={scrollViewRef}
           style={s.chatList}
-          contentContainerStyle={[s.chatListContent, { paddingBottom: insets.bottom + 90 }]}
+          contentContainerStyle={[
+            s.chatListContent,
+            { paddingBottom: isKeyboardVisible ? SPACING.md : insets.bottom + 90 },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -350,7 +360,12 @@ export default function ChatbotScreen() {
 
 
         {/* ── BARRA DE ENTRADA / INPUT ── */}
-        <View style={[s.inputContainer, { paddingBottom: insets.bottom + 90 }]}>
+        <View
+          style={[
+            s.inputContainer,
+            { paddingBottom: isKeyboardVisible ? SPACING.sm : insets.bottom + 90 },
+          ]}
+        >
           <View style={s.inputPill}>
             <TextInput
               style={s.input}
@@ -376,7 +391,7 @@ export default function ChatbotScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardModalContainer>
     </SafeAreaView>
   );
 }

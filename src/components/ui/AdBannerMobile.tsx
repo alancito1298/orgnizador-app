@@ -14,6 +14,7 @@ import * as SecureStore from 'expo-secure-store';
 
 import { apiFetch } from '../../api/client';
 import { COLORS, RADIUS, SPACING, FONT_SIZE } from '../../theme';
+import { useKeyboard } from '../../hooks/useKeyboard';
 
 const DISMISS_KEY = 'organizador_ad_dismissed_session';
 
@@ -45,6 +46,7 @@ const PROMO_ADS = [
 export default function AdBannerMobile() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { isKeyboardVisible } = useKeyboard();
 
   const [visible, setVisible] = useState(false);
   const [adIndex, setAdIndex] = useState(0);
@@ -119,7 +121,7 @@ export default function AdBannerMobile() {
     } catch {}
   };
 
-  if (!visible) return null;
+  if (!visible || isKeyboardVisible) return null;
 
   const current = PROMO_ADS[adIndex];
 

@@ -17,6 +17,8 @@ import AppInput from '../../components/ui/AppInput';
 import AppButton from '../../components/ui/AppButton';
 import AlertMessage from '../../components/ui/AlertMessage';
 import GoogleButton from '../../components/ui/GoogleButton';
+import { KeyboardModalContainer } from '../../components/ui/KeyboardModalContainer';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { useAuthStore, type RegisterData } from '../../store/authStore';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 import type { AuthStackParamList } from '../../../navigation/AuthNavigator';
@@ -35,6 +37,7 @@ type Nav = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 export default function RegisterScreen() {
   const navigation = useNavigation<Nav>();
   const register = useAuthStore((s) => s.register);
+  const { isKeyboardVisible } = useKeyboard();
 
   const [form, setForm] = useState<RegisterData & { repetirPassword: string }>({
     nombre: '', apellido: '', email: '', password: '',
@@ -115,12 +118,12 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardModalContainer style={styles.flex}>
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          isKeyboardVisible && { paddingBottom: SPACING.xxl + 32 },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -268,7 +271,7 @@ export default function RegisterScreen() {
           <AppButton label="Iniciá sesión" variant="outline" onPress={() => navigation.navigate('Login')} />
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardModalContainer>
   );
 }
 

@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.organizadordocente.app",
-      "versionCode": 10,
+      "versionCode": 13,
       "adaptiveIcon": {
         "backgroundColor": "#7c3aed",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,7 +20,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "softwareKeyboardLayoutMode": "pan",
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE"
@@ -62,7 +62,8 @@
             "enableProguardInReleaseBuilds": true
           }
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {

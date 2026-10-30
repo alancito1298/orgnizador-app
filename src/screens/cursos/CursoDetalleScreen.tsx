@@ -22,6 +22,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { apiFetch } from '../../api/client';
 import AppInput from '../../components/ui/AppInput';
 import AppButton from '../../components/ui/AppButton';
+import { KeyboardModalContainer } from '../../components/ui/KeyboardModalContainer';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import ImportarAlumnosModal from '../../components/alumnos/ImportarAlumnosModal';
 import PasoConceptoModal from '../../components/alumnos/PasoConceptoModal';
 import PasoCalificacionModal from '../../components/alumnos/PasoCalificacionModal';
@@ -141,6 +143,7 @@ export default function CursoDetalleScreen() {
   }, [tabsY]);
 
   // Datos
+  const { isKeyboardVisible, availableHeight } = useKeyboard();
   const [inscripciones, setInscripciones] = useState<Inscripcion[]>([]);
   const [asistencias, setAsistencias] = useState<Asistencia[]>([]);
   const [calificaciones, setCalificaciones] = useState<Calificacion[]>([]);
@@ -720,6 +723,7 @@ export default function CursoDetalleScreen() {
         style={s.scroll}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />}
       >
         {/* ── SECCIÓN 1: HEADER DEL CURSO (Fiel al web: neumorphic raised 3xl) ── */}
@@ -1746,8 +1750,8 @@ export default function CursoDetalleScreen() {
 
       {/* ── MODAL NUEVO / EDITAR ALUMNO ── */}
       <Modal visible={modalAlumno} transparent animationType="slide" onRequestClose={() => setModalAlumno(false)}>
-        <View style={m.overlay}>
-          <View style={m.sheet}>
+        <KeyboardModalContainer style={m.overlay}>
+          <View style={[m.sheet, isKeyboardVisible && { maxHeight: availableHeight, paddingVertical: SPACING.md }]}>
             <View style={m.head}>
               <Text style={m.title}>{editandoAlumnoId ? 'Editar Alumno' : '+ Inscribir Nuevo Alumno'}</Text>
               <TouchableOpacity onPress={() => setModalAlumno(false)}>
@@ -1755,28 +1759,35 @@ export default function CursoDetalleScreen() {
               </TouchableOpacity>
             </View>
 
-            <AppInput label="Apellido *" value={apellido} onChangeText={setApellido} placeholder="Ej: Gómez" />
-            <AppInput label="Nombre *" value={nombre} onChangeText={setNombre} placeholder="Ej: Lucas Matías" />
-            <AppInput label="DNI (opcional)" value={dni} onChangeText={setDni} placeholder="Ej: 46123456" keyboardType="numeric" />
-            <AppInput label="Contacto / Teléfono (opcional)" value={contacto} onChangeText={setContacto} placeholder="Ej: 11-4567-8901" keyboardType="phone-pad" />
+            <ScrollView
+              style={{ flexShrink: 1 }}
+              contentContainerStyle={{ gap: SPACING.sm, paddingBottom: SPACING.xs }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <AppInput label="Apellido *" value={apellido} onChangeText={setApellido} placeholder="Ej: Gómez" />
+              <AppInput label="Nombre *" value={nombre} onChangeText={setNombre} placeholder="Ej: Lucas Matías" />
+              <AppInput label="DNI (opcional)" value={dni} onChangeText={setDni} placeholder="Ej: 46123456" keyboardType="numeric" />
+              <AppInput label="Contacto / Teléfono (opcional)" value={contacto} onChangeText={setContacto} placeholder="Ej: 11-4567-8901" keyboardType="phone-pad" />
 
-            <View style={m.actions}>
-              <AppButton label="Cancelar" variant="outline" onPress={() => setModalAlumno(false)} style={{ flex: 1 }} />
-              <AppButton
-                label={guardandoAlumno ? 'Guardando...' : editandoAlumnoId ? 'Guardar Cambios' : 'Inscribir'}
-                onPress={handleGuardarAlumno}
-                loading={guardandoAlumno}
-                style={{ flex: 1 }}
-              />
-            </View>
+              <View style={m.actions}>
+                <AppButton label="Cancelar" variant="outline" onPress={() => setModalAlumno(false)} style={{ flex: 1 }} />
+                <AppButton
+                  label={guardandoAlumno ? 'Guardando...' : editandoAlumnoId ? 'Guardar Cambios' : 'Inscribir'}
+                  onPress={handleGuardarAlumno}
+                  loading={guardandoAlumno}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardModalContainer>
       </Modal>
 
       {/* ── MODAL CARGAR NOTA ── */}
       <Modal visible={modalNuevaNota} transparent animationType="slide" onRequestClose={() => setModalNuevaNota(false)}>
-        <View style={m.overlay}>
-          <View style={m.sheet}>
+        <KeyboardModalContainer style={m.overlay}>
+          <View style={[m.sheet, isKeyboardVisible && { maxHeight: availableHeight, paddingVertical: SPACING.md }]}>
             <View style={m.head}>
               <Text style={m.title}>+ Cargar Calificación</Text>
               <TouchableOpacity onPress={() => setModalNuevaNota(false)}>
@@ -1784,48 +1795,60 @@ export default function CursoDetalleScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={s.inputLabelModal}>Alumno:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipScrollModal}>
-              {inscripciones.map((insc) => (
-                <TouchableOpacity
-                  key={insc.id}
-                  style={[s.modalChip, alumnoSeleccionadoId === insc.id && s.modalChipActive]}
-                  onPress={() => setAlumnoSeleccionadoId(insc.id)}
-                >
-                  <Text style={[s.modalChipText, alumnoSeleccionadoId === insc.id && s.modalChipTextActive]}>
-                    {insc.alumno?.apellido} {insc.alumno?.nombre}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <ScrollView
+              style={{ flexShrink: 1 }}
+              contentContainerStyle={{ gap: SPACING.xs, paddingBottom: SPACING.xs }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={s.inputLabelModal}>Alumno:</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                style={s.chipScrollModal}
+              >
+                {inscripciones.map((insc) => (
+                  <TouchableOpacity
+                    key={insc.id}
+                    style={[s.modalChip, alumnoSeleccionadoId === insc.id && s.modalChipActive]}
+                    onPress={() => setAlumnoSeleccionadoId(insc.id)}
+                  >
+                    <Text style={[s.modalChipText, alumnoSeleccionadoId === insc.id && s.modalChipTextActive]}>
+                      {insc.alumno?.apellido} {insc.alumno?.nombre}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <Text style={[s.inputLabelModal, { marginTop: 10 }]}>Tipo de Evaluación:</Text>
+              <View style={s.tipoNotaRow}>
+                {['Evaluación', 'Trabajo Práctico', 'Oral', 'Concepto'].map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[s.modalTipoChip, tipoNota === t && s.modalTipoChipActive]}
+                    onPress={() => setTipoNota(t)}
+                  >
+                    <Text style={[s.modalTipoChipText, tipoNota === t && s.modalTipoChipTextActive]}>{t}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <AppInput
+                label="Calificación (1 a 10) *"
+                value={valorNota}
+                onChangeText={setValorNota}
+                placeholder="Ej: 8.50"
+                keyboardType="numeric"
+              />
+
+              <View style={m.actions}>
+                <AppButton label="Cancelar" variant="outline" onPress={() => setModalNuevaNota(false)} style={{ flex: 1 }} />
+                <AppButton label={guardandoNota ? 'Guardando...' : 'Guardar Nota'} onPress={handleGuardarNota} loading={guardandoNota} style={{ flex: 1 }} />
+              </View>
             </ScrollView>
-
-            <Text style={[s.inputLabelModal, { marginTop: 10 }]}>Tipo de Evaluación:</Text>
-            <View style={s.tipoNotaRow}>
-              {['Evaluación', 'Trabajo Práctico', 'Oral', 'Concepto'].map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  style={[s.modalTipoChip, tipoNota === t && s.modalTipoChipActive]}
-                  onPress={() => setTipoNota(t)}
-                >
-                  <Text style={[s.modalTipoChipText, tipoNota === t && s.modalTipoChipTextActive]}>{t}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <AppInput
-              label="Calificación (1 a 10) *"
-              value={valorNota}
-              onChangeText={setValorNota}
-              placeholder="Ej: 8.50"
-              keyboardType="numeric"
-            />
-
-            <View style={m.actions}>
-              <AppButton label="Cancelar" variant="outline" onPress={() => setModalNuevaNota(false)} style={{ flex: 1 }} />
-              <AppButton label={guardandoNota ? 'Guardando...' : 'Guardar Nota'} onPress={handleGuardarNota} loading={guardandoNota} style={{ flex: 1 }} />
-            </View>
           </View>
-        </View>
+        </KeyboardModalContainer>
       </Modal>
 
       {/* ── MODAL IMPORTAR ALUMNOS DESDE LISTA / TEXTO / EXCEL ── */}

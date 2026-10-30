@@ -13,6 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { apiFetch } from '../../api/client';
 import AppButton from '../ui/AppButton';
+import { KeyboardModalContainer } from '../ui/KeyboardModalContainer';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 
 interface AlumnoImportado {
@@ -33,6 +35,7 @@ interface Props {
 }
 
 export default function ImportarAlumnosModal({ abierto, cursoId, onCerrar, onImportados }: Props) {
+  const { isKeyboardVisible, availableHeight } = useKeyboard();
   const [textoPegado, setTextoPegado] = useState('');
   const [alumnosDetectados, setAlumnosDetectados] = useState<AlumnoImportado[]>([]);
   const [analizado, setAnalizado] = useState(false);
@@ -171,8 +174,17 @@ export default function ImportarAlumnosModal({ abierto, cursoId, onCerrar, onImp
 
   return (
     <Modal visible={abierto} transparent animationType="slide" onRequestClose={onCerrar}>
-      <View style={s.overlay}>
-        <View style={s.sheet}>
+      <KeyboardModalContainer style={s.overlay}>
+        <View
+          style={[
+            s.sheet,
+            isKeyboardVisible && {
+              minHeight: Math.min(340, availableHeight),
+              maxHeight: availableHeight,
+              paddingVertical: SPACING.md,
+            },
+          ]}
+        >
           {/* Header */}
           <View style={s.header}>
             <View style={s.headerLeft}>
@@ -190,7 +202,12 @@ export default function ImportarAlumnosModal({ abierto, cursoId, onCerrar, onImp
           </View>
 
           {!analizado ? (
-            <ScrollView showsVerticalScrollIndicator={false} style={s.scroll}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              style={s.scroll}
+              contentContainerStyle={{ paddingBottom: SPACING.md }}
+            >
               <View style={s.helpBox}>
                 <Ionicons name="information-circle" size={18} color={COLORS.accent} />
                 <Text style={s.helpText}>
@@ -200,7 +217,7 @@ export default function ImportarAlumnosModal({ abierto, cursoId, onCerrar, onImp
               </View>
 
               <TextInput
-                style={s.textArea}
+                style={[s.textArea, isKeyboardVisible && { minHeight: 110 }]}
                 multiline
                 numberOfLines={8}
                 placeholder={`Pegá aquí la lista de alumnos...\nEjemplo:\nPérez, Juan\nGómez, María\nRodríguez, Lucas`}
@@ -295,7 +312,7 @@ export default function ImportarAlumnosModal({ abierto, cursoId, onCerrar, onImp
             </View>
           )}
         </View>
-      </View>
+      </KeyboardModalContainer>
     </Modal>
   );
 }

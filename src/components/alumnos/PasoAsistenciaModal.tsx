@@ -17,6 +17,7 @@ const Text = (props: TextProps) => <RNText allowFontScaling={false} {...props} /
 import { Ionicons } from '@expo/vector-icons';
 import { apiFetch } from '../../api/client';
 import AppButton from '../ui/AppButton';
+import { KeyboardModalContainer } from '../ui/KeyboardModalContainer';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 import { useOfflineStore } from '../../utils/offlineSync';
 
@@ -165,10 +166,7 @@ export default function PasoAsistenciaModal({
 
   return (
     <Modal visible={abierto} transparent animationType="slide" onRequestClose={onCerrar}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={s.overlay}
-      >
+      <KeyboardModalContainer style={s.overlay}>
         <View style={s.sheet}>
           {/* ── HEADER ── */}
           <View style={s.head}>
@@ -311,7 +309,7 @@ export default function PasoAsistenciaModal({
             />
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardModalContainer>
     </Modal>
   );
 }

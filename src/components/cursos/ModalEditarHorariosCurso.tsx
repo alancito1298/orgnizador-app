@@ -17,6 +17,8 @@ import { apiFetch } from '../../api/client';
 import AppInput from '../ui/AppInput';
 import AppButton from '../ui/AppButton';
 import AlertMessage from '../ui/AlertMessage';
+import { KeyboardModalContainer } from '../ui/KeyboardModalContainer';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 
 export interface CursoInfo {
@@ -92,6 +94,7 @@ export default function ModalEditarHorariosCurso({
   onClose,
   onGuardado,
 }: ModalEditarHorariosCursoProps) {
+  const { isKeyboardVisible, availableHeight } = useKeyboard();
   const [horarios, setHorarios] = useState<HorarioItemEdit[]>([]);
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -272,11 +275,16 @@ export default function ModalEditarHorariosCurso({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={m.overlay}
-      >
-        <View style={m.sheet}>
+      <KeyboardModalContainer style={m.overlay}>
+        <View
+          style={[
+            m.sheet,
+            isKeyboardVisible && {
+              minHeight: Math.min(360, availableHeight),
+              maxHeight: availableHeight,
+            },
+          ]}
+        >
           {/* Header */}
           <View style={m.header}>
             <View style={m.headerLeft}>
@@ -425,7 +433,7 @@ export default function ModalEditarHorariosCurso({
             />
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardModalContainer>
     </Modal>
   );
 }

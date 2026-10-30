@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { apiFetch } from '../../api/client';
 import { COLORS, RADIUS, SPACING, NEU } from '../../theme';
 import { useNotifStore } from '../../store/notifStore';
+import { useKeyboard } from '../../hooks/useKeyboard';
 
 interface AgendaItem { id: number; fecha: string; descripcion: string; }
 
@@ -25,6 +26,7 @@ interface BottomNavProps {
 export default function BottomNav({ activeRoute }: BottomNavProps) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { isKeyboardVisible } = useKeyboard();
 
   const [modalNotif, setModalNotif] = useState(false);
   const [modalIngreso, setModalIngreso] = useState(false);
@@ -86,61 +88,63 @@ export default function BottomNav({ activeRoute }: BottomNavProps) {
   return (
     <>
       {/* ── PILL FLOTANTE ── */}
-      <View style={[pill.wrapper, { bottom: insets.bottom + 12 }]}>
-        <View style={pill.pill}>
+      {!isKeyboardVisible && (
+        <View style={[pill.wrapper, { bottom: insets.bottom + 12 }]}>
+          <View style={pill.pill}>
 
-          {/* Back */}
-          <TouchableOpacity
-            style={[pill.btn, !canGoBack && pill.btnDisabled]}
-            onPress={() => navigation.goBack()}
-            disabled={!canGoBack}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="arrow-back" size={26} color={canGoBack ? COLORS.secondary : COLORS.border} />
-          </TouchableOpacity>
+            {/* Back */}
+            <TouchableOpacity
+              style={[pill.btn, !canGoBack && pill.btnDisabled]}
+              onPress={() => navigation.goBack()}
+              disabled={!canGoBack}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="arrow-back" size={26} color={canGoBack ? COLORS.secondary : COLORS.border} />
+            </TouchableOpacity>
 
-          {/* Home (activo con inset) */}
-          <TouchableOpacity
-            style={[pill.btn, activeRoute === 'Home' && pill.btnActive]}
-            onPress={() => navigation.navigate('Home' as never)}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name={activeRoute === 'Home' ? 'home' : 'home-outline'}
-              size={26}
-              color={COLORS.accent}
-            />
-          </TouchableOpacity>
+            {/* Home (activo con inset) */}
+            <TouchableOpacity
+              style={[pill.btn, activeRoute === 'Home' && pill.btnActive]}
+              onPress={() => navigation.navigate('Home' as never)}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={activeRoute === 'Home' ? 'home' : 'home-outline'}
+                size={26}
+                color={COLORS.accent}
+              />
+            </TouchableOpacity>
 
-          {/* 🤖 Asistente Pedagógico IA */}
-          <TouchableOpacity
-            style={[pill.btn, activeRoute === 'ChatbotIA' && pill.btnActive]}
-            onPress={() => navigation.navigate('ChatbotIA' as never)}
-            activeOpacity={0.8}
-          >
-            <MaterialCommunityIcons
-              name="robot-outline"
-              size={26}
-              color={activeRoute === 'ChatbotIA' ? COLORS.accent : COLORS.secondary}
-            />
-          </TouchableOpacity>
+            {/* 🤖 Asistente Pedagógico IA */}
+            <TouchableOpacity
+              style={[pill.btn, activeRoute === 'ChatbotIA' && pill.btnActive]}
+              onPress={() => navigation.navigate('ChatbotIA' as never)}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons
+                name="robot-outline"
+                size={26}
+                color={activeRoute === 'ChatbotIA' ? COLORS.accent : COLORS.secondary}
+              />
+            </TouchableOpacity>
 
-          {/* 🔔 Notificaciones */}
-          <TouchableOpacity
-            style={pill.btn}
-            onPress={handleOpenNotif}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="notifications-outline" size={26} color={COLORS.secondary} />
-            {totalNoVistos > 0 && (
-              <View style={pill.badge}>
-                <Text style={pill.badgeText}>{totalNoVistos}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+            {/* 🔔 Notificaciones */}
+            <TouchableOpacity
+              style={pill.btn}
+              onPress={handleOpenNotif}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="notifications-outline" size={26} color={COLORS.secondary} />
+              {totalNoVistos > 0 && (
+                <View style={pill.badge}>
+                  <Text style={pill.badgeText}>{totalNoVistos}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
 
+          </View>
         </View>
-      </View>
+      )}
 
       {/* ── MODAL NOTIFICACIONES ── */}
       <Modal visible={modalNotif} transparent animationType="slide" onRequestClose={() => setModalNotif(false)}>

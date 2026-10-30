@@ -15,24 +15,45 @@ import { useAuthStore } from '../../store/authStore';
 import { logError } from '../../utils/sentry';
 
 /**
- * Client ID de tipo "Aplicación web" de Google Cloud (el mismo que usa la web y el backend).
+ * Client ID de tipo Aplicación web de Google Cloud (el mismo que usa la web y el backend).
  * El idToken que devuelve Google tendrá este client como audience, así que el backend
  * lo valida sin cambios en /auth/google.
  */
 const GOOGLE_WEB_CLIENT_ID =
-  '868455775736-8gvm8ad8kdj0206iifc2qka0043c5s46.apps.googleusercontent.com';
+  '973174699212-l3j5ng16i134rioq6nnli3r4l18ocots.apps.googleusercontent.com';
 
 // Carga diferida y segura: el módulo nativo sólo existe en compilaciones completas (no en Expo Go ni builds desactualizados).
 let GoogleSigninModule: typeof import('@react-native-google-signin/google-signin') | null = null;
 let configured = false;
+
+function isNativeGoogleSigninAvailable(): boolean {
+  try {
+    if (NativeModules && (NativeModules.RNGoogleSignin || NativeModules.RNGoogleSignIn)) {
+      return true;
+    }
+    if (TurboModuleRegistry && typeof TurboModuleRegistry.get === 'function') {
+      const mod = TurboModuleRegistry.get('RNGoogleSignin');
+      if (mod) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 function getGoogleSignin() {
   if (GoogleSigninModule && configured) {
     return GoogleSigninModule;
   }
 
+  // Si no está registrado en el binario nativo (ej. Expo Go), evitamos require()
+  // para que TurboModuleRegistry.getEnforcing() no lance Invariant Violation.
+  if (!isNativeGoogleSigninAvailable()) {
+    console.warn('[GoogleSignin] Módulo nativo RNGoogleSignin no detectado en este entorno (ej. Expo Go).');
+    return null;
+  }
+
   try {
-    // Si el binario nativo no incluye el módulo, require() lanzará un error que aquí capturamos limpiamente.
     const mod = require('@react-native-google-signin/google-signin');
     if (mod && mod.GoogleSignin) {
       if (!configured) {
@@ -43,7 +64,7 @@ function getGoogleSignin() {
       return GoogleSigninModule;
     }
   } catch (e: any) {
-    console.warn('[GoogleSignin] Módulo nativo no disponible en este binario:', e?.message || e);
+    console.warn('[GoogleSignin] Error al inicializar módulo nativo:', e?.message || e);
     GoogleSigninModule = null;
     return null;
   }
@@ -51,7 +72,7 @@ function getGoogleSignin() {
   return GoogleSigninModule;
 }
 
-/** Logo "G" oficial multicolor de Google */
+/** Logo G oficial multicolor de Google */
 function GoogleLogo({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48">
@@ -88,7 +109,9 @@ export default function GoogleButton({
     }
 
     if (!mod) {
-      onError?.('El inicio con Google requiere tener la app actualizada instalada desde Play Store (no disponible en Expo Go o versiones desactualizadas).');
+      onError?.(
+        'El inicio con Google requiere tener la app instalada en versión compilada (no disponible en Expo Go genérico).'
+      );
       return;
     }
 
@@ -97,11 +120,10 @@ export default function GoogleButton({
     setLoading(true);
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      // Forzamos el selector de cuenta cada vez
       await GoogleSignin.signOut().catch(() => {});
       const response = await GoogleSignin.signIn();
 
-      if (!isSuccessResponse(response)) return; // usuario canceló
+      if (!isSuccessResponse(response)) return;
 
       const idToken = response.data.idToken;
       if (!idToken) throw new Error('Google no devolvió un token de identificación.');
@@ -117,11 +139,12 @@ export default function GoogleButton({
           return;
         }
 
-        // Error code 10 = DEVELOPER_ERROR (SHA-1 / package name mismatch in Google Cloud Console)
         const codeStr = String(err.code);
         if (codeStr === '10' || codeStr === 'DEVELOPER_ERROR') {
           logError(err, { stage: 'google_signin_developer_error', code: err.code });
-          onError?.('Error de configuración (código 10): falta registrar la huella SHA-1 de Google Play en Google Cloud Console.');
+          onError?.(
+            'Error de configuración (código 10): falta registrar la huella SHA-1 de Google Play en Google Cloud Console.'
+          );
           return;
         }
       }
@@ -175,7 +198,6 @@ export default function GoogleButton({
   );
 }
 
-// Especificación del botón estándar de Google (tema claro / "outline")
 const styles = StyleSheet.create({
   button: {
     height: 40,
@@ -200,7 +222,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#1F1F1F',
     letterSpacing: 0.25,
-    fontFamily: Platform.select({ android: 'Roboto', default: undefined }), // fuente oficial de Google
+    fontFamily: Platform.select({ android: 'Roboto', default: undefined }),
   },
   labelDisabled: { opacity: 0.38 },
 });

@@ -13,6 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { apiFetch } from '../../api/client';
 import AppButton from '../ui/AppButton';
+import { KeyboardModalContainer } from '../ui/KeyboardModalContainer';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { COLORS, RADIUS, SPACING } from '../../theme';
 
 interface Inscripcion {
@@ -49,6 +51,7 @@ export default function PasoCalificacionModal({
   onCerrar,
   onFinalizado,
 }: Props) {
+  const { isKeyboardVisible, availableHeight } = useKeyboard();
   const hoyStr = new Date().toISOString().split('T')[0];
   const [fecha, setFecha] = useState(hoyStr);
   const [tipo, setTipo] = useState<TipoEvaluacion>('trabajo_practico');
@@ -104,8 +107,17 @@ export default function PasoCalificacionModal({
 
   return (
     <Modal visible={abierto} transparent animationType="slide" onRequestClose={onCerrar}>
-      <View style={s.overlay}>
-        <View style={s.sheet}>
+      <KeyboardModalContainer style={s.overlay}>
+        <View
+          style={[
+            s.sheet,
+            isKeyboardVisible && {
+              maxHeight: availableHeight,
+              paddingVertical: SPACING.md,
+              gap: SPACING.sm,
+            },
+          ]}
+        >
           {/* Encabezado */}
           <View style={s.head}>
             <View style={s.headLeft}>
@@ -156,7 +168,16 @@ export default function PasoCalificacionModal({
           </View>
 
           {/* Lista de Alumnos */}
-          <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={[
+              s.scroll,
+              isKeyboardVisible && {
+                maxHeight: Math.max(120, availableHeight - 200),
+              },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             {inscripciones.map((insc) => {
               const val = notas[insc.id] || '';
               const num = parseFloat(val);
@@ -211,7 +232,7 @@ export default function PasoCalificacionModal({
             />
           </View>
         </View>
-      </View>
+      </KeyboardModalContainer>
     </Modal>
   );
 }
