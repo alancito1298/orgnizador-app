@@ -37,7 +37,7 @@ export default function ForgotPasswordScreen() {
     try {
       await apiFetch('/auth/forgot-password', {
         method: 'POST',
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
       setEnviado(true);
     } catch {
@@ -96,6 +96,9 @@ export default function ForgotPasswordScreen() {
               <Text style={styles.successTitle}>Revisá tu email</Text>
               <Text style={styles.successText}>
                 Si el email está registrado, recibirás un link para restablecer tu contraseña en los próximos minutos.
+              </Text>
+              <Text style={[styles.successText, { marginTop: 6, fontSize: 12, opacity: 0.8 }]}>
+                (Recordá verificar también en tu carpeta de Spam o Correo no deseado)
               </Text>
             </View>
           )}

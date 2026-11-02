@@ -44,7 +44,7 @@ export default function LoginScreen() {
     setLoading(true);
     setError(null);
     try {
-      await login(email, password);
+      await login(email.trim().toLowerCase(), password);
       // El RootNavigator detecta el token y redirige automáticamente
     } catch (err: any) {
       setError(err.message || 'Email o contraseña incorrectos.');
