@@ -16,6 +16,7 @@ interface AppInputProps extends TextInputProps {
   error?: boolean;
   rightIcon?: keyof typeof Ionicons.glyphMap;
   onRightIconPress?: () => void;
+  suffixText?: string;
 }
 
 export default function AppInput({
@@ -24,6 +25,7 @@ export default function AppInput({
   error = false,
   rightIcon,
   onRightIconPress,
+  suffixText,
   ...rest
 }: AppInputProps) {
   return (
@@ -38,6 +40,9 @@ export default function AppInput({
           placeholderTextColor={COLORS.secondary}
           {...rest}
         />
+        {suffixText && (
+          <Text style={styles.suffix}>{suffixText}</Text>
+        )}
         {rightIcon && (
           <TouchableOpacity onPress={onRightIconPress} style={styles.rightIconBtn} activeOpacity={0.7}>
             <Ionicons name={rightIcon} size={18} color={COLORS.secondary} />
@@ -87,6 +92,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.onSurface,
     fontWeight: '500',
+  },
+  suffix: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.accent,
+    paddingRight: 14,
+    userSelect: 'none',
   },
   rightIconBtn: {
     padding: 12,

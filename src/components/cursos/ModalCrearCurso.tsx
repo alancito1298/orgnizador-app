@@ -54,6 +54,12 @@ export default function ModalCrearCurso({
 }: ModalCrearCursoProps) {
   const { isKeyboardVisible, availableHeight } = useKeyboard();
   const [anio, setAnio] = useState('');
+
+  const handleAnioChange = (val: string) => {
+    // Solo permitir un solo n?mero (sin letras ni caracteres extra)
+    const soloUnNumero = val.replace(/[^0-9]/g, '').slice(0, 1);
+    setAnio(soloUnNumero);
+  };
   const [escuela, setEscuela] = useState('');
   const [materia, setMateria] = useState('');
   const [asignarHorario, setAsignarHorario] = useState(true);
@@ -88,10 +94,12 @@ export default function ModalCrearCurso({
   };
 
   const guardar = async () => {
-    if (!anio.trim() || !escuela.trim() || !materia.trim()) {
-      setError('Completá año, institución y materia.');
+    const anioDigito = anio.replace(/[^0-9]/g, '').slice(0, 1);
+    if (!anioDigito || !escuela.trim() || !materia.trim()) {
+      setError('Completá año (1 solo número), institución y materia.');
       return;
     }
+    const anioFinal = `${anioDigito}°`;
     setGuardando(true);
     setError(null);
     try {
@@ -100,7 +108,7 @@ export default function ModalCrearCurso({
         auth: true,
         body: JSON.stringify({
           escuela: escuela.trim(),
-          anio: anio.trim(),
+          anio: anioFinal,
           materia: materia.trim(),
         }),
       });
@@ -117,7 +125,7 @@ export default function ModalCrearCurso({
         if (lista.length > 0) {
           const desc = JSON.stringify({
             materia: materia.trim(),
-            curso: anio.trim(),
+            curso: anioFinal,
             escuela: escuela.trim(),
             cursoId: data.id,
           });
@@ -191,11 +199,14 @@ export default function ModalCrearCurso({
 
             <View style={mc.fields}>
               <AppInput
-                label="Año o División *"
+                label="Año o Grado *"
                 iconName="layers-outline"
-                placeholder="Ej. 1° Año, 2° 1ra"
+                placeholder="1"
                 value={anio}
-                onChangeText={setAnio}
+                onChangeText={handleAnioChange}
+                keyboardType="number-pad"
+                maxLength={1}
+                suffixText="°"
               />
               <AppInput
                 label="Institución / Escuela *"
