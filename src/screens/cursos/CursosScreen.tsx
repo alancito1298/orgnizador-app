@@ -117,7 +117,6 @@ function CursoCard({
         {/* Ícono año (caja violeta) */}
         <View style={card.anioBox}>
           <Text style={card.anioNum}>{formatAnio(curso.anio)}</Text>
-          <Text style={card.anioLabel}>Curso</Text>
         </View>
 
         {/* Info */}
@@ -203,12 +202,11 @@ const card = StyleSheet.create({
     gap: SPACING.md,
   },
   anioBox: {
-    width: 60, height: 60, backgroundColor: COLORS.accent,
-    borderRadius: RADIUS.lg, alignItems:'center', justifyContent:'center',
+    width: 44, height: 44, backgroundColor: COLORS.accent,
+    borderRadius: RADIUS.md, alignItems:'center', justifyContent:'center',
     flexShrink: 0,
   },
-  anioNum: { color:'#fff', fontSize:22, fontWeight:'800', lineHeight:24 },
-  anioLabel: { color:'rgba(255,255,255,0.85)', fontSize:10, fontWeight:'700', textTransform:'uppercase', letterSpacing:1 },
+  anioNum: { color:'#fff', fontSize:15, fontWeight:'800' },
   info: { flex:1, gap:3 },
   topRow: { flexDirection:'row', alignItems:'center', gap:6, flexWrap:'wrap' },
   anioBadge: { backgroundColor:'#ede9fe', borderRadius:6, paddingHorizontal:8, paddingVertical:3 },
