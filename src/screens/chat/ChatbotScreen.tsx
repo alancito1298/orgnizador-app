@@ -300,11 +300,11 @@ export default function ChatbotScreen() {
 
       <KeyboardModalContainer style={{ flex: 1 }}>
         {/* ── LISTA DE MENSAJES ── */}
-        {/* ── AVISO IA (Google Play AI Policy) ── */}
+        {/* ── AVISO IA EN FASE DE PRUEBA ── */}
         <View style={s.aiDisclaimer}>
-          <Ionicons name="sparkles-outline" size={13} color="#7c3aed" />
+          <Ionicons name="warning-outline" size={14} color="#b45309" />
           <Text style={s.aiDisclaimerText}>
-            Generado por IA · Las respuestas son orientativas y deben ser revisadas por el docente
+            En fase de prueba · La IA puede cometer errores. Verificá siempre la información pedagógica.
           </Text>
         </View>
 
@@ -609,18 +609,18 @@ const s = StyleSheet.create({
     gap: 6,
     marginHorizontal: 16,
     marginBottom: 4,
-    backgroundColor: '#f5f3ff',
+    backgroundColor: '#fef3c7',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.15)',
+    borderColor: 'rgba(217,119,6,0.3)',
   },
   aiDisclaimerText: {
     flex: 1,
     fontSize: 11,
-    color: '#6b21a8',
-    fontWeight: '500',
+    color: '#92400e',
+    fontWeight: '600',
     lineHeight: 15,
   },
 });
