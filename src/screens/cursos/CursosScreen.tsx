@@ -122,19 +122,19 @@ function CursoCard({
         {/* Info */}
         <View style={card.info}>
           <View style={card.topRow}>
-            <Text style={card.escuela} numberOfLines={1}>{curso.escuela}</Text>
+            <Text style={card.escuela}>{curso.escuela}</Text>
           </View>
-          <Text style={card.materia} numberOfLines={1}>{curso.materia}</Text>
+          <Text style={card.materia}>{curso.materia}</Text>
           {curso.orientacion ? (
             <View style={card.orientacionRow}>
-              <Ionicons name="compass-outline" size={14} color={COLORS.accent} />
-              <Text style={card.orientacionText} numberOfLines={1}>
+              <Ionicons name="compass-outline" size={18} color={COLORS.accent} />
+              <Text style={card.orientacionText}>
                 Orientación: {curso.orientacion}
               </Text>
             </View>
           ) : null}
           <View style={card.ingresarRow}>
-            <Ionicons name="arrow-forward" size={14} color={COLORS.accent} />
+            <Ionicons name="arrow-forward" size={18} color={COLORS.accent} />
             <Text style={card.ingresarText}>Ingresar al aula</Text>
           </View>
         </View>
@@ -146,7 +146,7 @@ function CursoCard({
             onPress={() => onEditarHorarios(curso)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="time-outline" size={20} color={COLORS.accent} />
+            <Ionicons name="time-outline" size={24} color={COLORS.accent} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -157,7 +157,7 @@ function CursoCard({
             {eliminando ? (
               <ActivityIndicator size="small" color="#ef4444" />
             ) : (
-              <Ionicons name="trash-outline" size={20} color="#ef4444" />
+              <Ionicons name="trash-outline" size={24} color="#ef4444" />
             )}
           </TouchableOpacity>
         </View>
@@ -194,109 +194,114 @@ const card = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 20,
+    borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: 'rgba(124,58,237,0.12)',
-    paddingVertical: 16,
+    borderColor: 'rgba(124,58,237,0.15)',
+    paddingVertical: 18,
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 14,
     shadowColor: '#7c3aed',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 4,
-    gap: 14,
+    gap: 16,
   },
   anioBox: {
-    width: 52,
-    height: 52,
+    width: 68,
+    height: 68,
     backgroundColor: COLORS.accent,
-    borderRadius: 14,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
     shadowColor: COLORS.accent,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   anioNum: {
     color: '#fff',
-    fontSize: 19,
+    fontSize: 30,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
   info: {
     flex: 1,
-    gap: 4,
+    gap: 6,
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexWrap: 'wrap',
   },
   escuela: {
-    fontSize: 13,
+    fontSize: 20,
+    lineHeight: 25,
     color: '#7c3aed',
-    fontWeight: '700',
+    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     flex: 1,
   },
   materia: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '900',
     color: '#111827',
     textTransform: 'uppercase',
     letterSpacing: 0.2,
-    lineHeight: 22,
   },
   orientacionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    marginTop: 2,
+    gap: 7,
+    marginTop: 4,
     backgroundColor: '#f5f3ff',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
     alignSelf: 'flex-start',
+    flexWrap: 'wrap',
   },
   orientacionText: {
-    fontSize: 12,
+    fontSize: 18,
+    lineHeight: 23,
     fontWeight: '700',
     color: COLORS.accent,
   },
   ingresarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
+    gap: 6,
+    marginTop: 6,
   },
   ingresarText: {
-    fontSize: 13,
+    fontSize: 18,
+    lineHeight: 23,
     color: COLORS.accent,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   actionsCol: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    marginLeft: 2,
+    gap: 12,
+    marginLeft: 4,
   },
   editBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     backgroundColor: '#ede9fe',
     alignItems: 'center',
     justifyContent: 'center',
   },
   deleteBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     backgroundColor: '#fee2e2',
     alignItems: 'center',
     justifyContent: 'center',
