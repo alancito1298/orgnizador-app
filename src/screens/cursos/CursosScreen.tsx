@@ -29,7 +29,7 @@ import type { AppStackParamList } from '../../../navigation/AppNavigator';
 type Nav = NativeStackNavigationProp<AppStackParamList>;
 
 // ─── Tipos ────────────────────────────────────────────────────────────────
-interface Curso { id: number; escuela: string; anio: string; materia: string; ruta: string; }
+interface Curso { id: number; escuela: string; anio: string; materia: string; orientacion?: string | null; ruta: string; }
 interface HorarioExtra { dia: string; hora: string; }
 
 const DIAS_SEMANA = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
@@ -129,6 +129,14 @@ function CursoCard({
             <Text style={card.escuela} numberOfLines={1}>{curso.escuela}</Text>
           </View>
           <Text style={card.materia} numberOfLines={1}>{curso.materia}</Text>
+          {curso.orientacion ? (
+            <View style={card.orientacionRow}>
+              <Ionicons name="compass-outline" size={12} color={COLORS.accent} />
+              <Text style={card.orientacionText} numberOfLines={1}>
+                Orientación: {curso.orientacion}
+              </Text>
+            </View>
+          ) : null}
           <View style={card.ingresarRow}>
             <Ionicons name="arrow-forward" size={12} color={COLORS.accent} />
             <Text style={card.ingresarText}>Ingresar al aula</Text>
@@ -207,6 +215,8 @@ const card = StyleSheet.create({
   anioBadgeText: { fontSize:13, fontWeight:'800', color:'#5b21b6', textTransform:'uppercase' },
   escuela: { fontSize:11, color:'#7c3aed', fontWeight:'700', textTransform:'uppercase', letterSpacing:0.3, flex:1 },
   materia: { fontSize:16, fontWeight:'800', color:'#111827', textTransform:'uppercase', letterSpacing:0.2 },
+  orientacionRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+  orientacionText: { fontSize: 11, fontWeight: '700', color: COLORS.accent },
   ingresarRow: { flexDirection:'row', alignItems:'center', gap:3, marginTop:2 },
   ingresarText: { fontSize:12, color: COLORS.accent, fontWeight:'600' },
   actionsCol: {

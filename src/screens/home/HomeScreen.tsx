@@ -22,7 +22,7 @@ import type { AppStackParamList } from '../../../navigation/AppNavigator';
 
 type Nav = NativeStackNavigationProp<AppStackParamList>;
 
-interface Curso { id: number; escuela: string; anio: string; materia: string; ruta: string; }
+interface Curso { id: number; escuela: string; anio: string; materia: string; ruta: string; orientacion?: string | null; }
 interface AgendaItem { id: number; fecha: string; descripcion: string; }
 interface ActividadHoy { id: number; hora: string; materia: string; curso: string; escuela: string; cursoId?: number | null; }
 
@@ -181,6 +181,12 @@ function CursoCard({ curso, onPress }: { curso: Curso; onPress: () => void }) {
       </View>
       <View style={cc.info}>
         <Text style={cc.materia} numberOfLines={1}>{curso.materia}</Text>
+        {curso.orientacion ? (
+          <View style={cc.orientacionRow}>
+            <Ionicons name="compass-outline" size={11} color={COLORS.accent} />
+            <Text style={cc.orientacion} numberOfLines={1}>{curso.orientacion}</Text>
+          </View>
+        ) : null}
         {curso.escuela ? (
           <View style={cc.escuelaRow}>
             <Ionicons name="business-outline" size={12} color={COLORS.secondary} />
@@ -250,6 +256,17 @@ const cc = StyleSheet.create({
     fontWeight: '800',
     color: COLORS.onSurface,
     textTransform: 'uppercase',
+  },
+  orientacionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  orientacion: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.accent,
+    textTransform: 'capitalize',
   },
   escuelaRow: {
     flexDirection: 'row',

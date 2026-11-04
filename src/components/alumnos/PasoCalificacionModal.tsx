@@ -115,6 +115,7 @@ export default function PasoCalificacionModal({
               maxHeight: availableHeight,
               paddingVertical: SPACING.md,
               gap: SPACING.sm,
+              paddingBottom: SPACING.sm,
             },
           ]}
         >

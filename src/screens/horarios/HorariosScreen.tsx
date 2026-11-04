@@ -498,7 +498,7 @@ export default function HorariosScreen() {
       {/* ── MODAL AGREGAR HORARIO ── */}
       <Modal visible={modalAgregar} transparent animationType="slide" onRequestClose={() => setModalAgregar(false)}>
         <KeyboardModalContainer style={m.overlay}>
-          <View style={[m.sheet, isKeyboardVisible && { maxHeight: availableHeight }]}>
+          <View style={[m.sheet, isKeyboardVisible && { maxHeight: availableHeight, paddingBottom: SPACING.sm }]}>
             <View style={m.head}>
               <Text style={m.title}>+ Nueva Clase</Text>
               <TouchableOpacity onPress={() => setModalAgregar(false)}>

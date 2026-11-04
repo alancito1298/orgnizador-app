@@ -738,6 +738,12 @@ export default function CursoDetalleScreen() {
                   </View>
                 )}
                 <Text style={s.headerMateriaText}>{curso?.materia?.toUpperCase()}</Text>
+                {curso?.orientacion ? (
+                  <View style={s.headerOrientacionBadge}>
+                    <Ionicons name="compass-outline" size={11} color="#6d28d9" />
+                    <Text style={s.headerOrientacionText}>{curso.orientacion}</Text>
+                  </View>
+                ) : null}
                 <Text style={s.headerEscuelaText}>— {curso?.escuela}</Text>
                 <TouchableOpacity
                   onPress={() => setModalEditarHorarios(true)}
@@ -1751,7 +1757,7 @@ export default function CursoDetalleScreen() {
       {/* ── MODAL NUEVO / EDITAR ALUMNO ── */}
       <Modal visible={modalAlumno} transparent animationType="slide" onRequestClose={() => setModalAlumno(false)}>
         <KeyboardModalContainer style={m.overlay}>
-          <View style={[m.sheet, isKeyboardVisible && { maxHeight: availableHeight, paddingVertical: SPACING.md }]}>
+          <View style={[m.sheet, isKeyboardVisible && { maxHeight: availableHeight, paddingTop: SPACING.md, paddingBottom: SPACING.sm }]}>
             <View style={m.head}>
               <Text style={m.title}>{editandoAlumnoId ? 'Editar Alumno' : '+ Inscribir Nuevo Alumno'}</Text>
               <TouchableOpacity onPress={() => setModalAlumno(false)}>
@@ -1787,7 +1793,7 @@ export default function CursoDetalleScreen() {
       {/* ── MODAL CARGAR NOTA ── */}
       <Modal visible={modalNuevaNota} transparent animationType="slide" onRequestClose={() => setModalNuevaNota(false)}>
         <KeyboardModalContainer style={m.overlay}>
-          <View style={[m.sheet, isKeyboardVisible && { maxHeight: availableHeight, paddingVertical: SPACING.md }]}>
+          <View style={[m.sheet, isKeyboardVisible && { maxHeight: availableHeight, paddingTop: SPACING.md, paddingBottom: SPACING.sm }]}>
             <View style={m.head}>
               <Text style={m.title}>+ Cargar Calificación</Text>
               <TouchableOpacity onPress={() => setModalNuevaNota(false)}>
@@ -2167,6 +2173,8 @@ const s = StyleSheet.create({
   },
   headerAnioText: { fontSize: 13, fontWeight: '900', color: '#5b21b6', textTransform: 'uppercase' },
   headerMateriaText: { fontSize: 13, fontWeight: '800', color: COLORS.onSurface },
+  headerOrientacionBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#ede9fe', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  headerOrientacionText: { fontSize: 11, fontWeight: '700', color: '#6d28d9' },
   headerEscuelaText: { fontSize: 12, color: COLORS.secondary, fontWeight: '500' },
   headerEditHorariosBtn: {
     flexDirection: 'row',

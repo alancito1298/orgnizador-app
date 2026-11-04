@@ -282,6 +282,7 @@ export default function ModalEditarHorariosCurso({
             isKeyboardVisible && {
               minHeight: Math.min(360, availableHeight),
               maxHeight: availableHeight,
+              paddingBottom: SPACING.sm,
             },
           ]}
         >

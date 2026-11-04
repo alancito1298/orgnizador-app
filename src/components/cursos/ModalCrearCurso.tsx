@@ -25,6 +25,7 @@ export interface Curso {
   escuela: string;
   anio: string;
   materia: string;
+  orientacion?: string | null;
   ruta: string;
 }
 
@@ -62,6 +63,7 @@ export default function ModalCrearCurso({
   };
   const [escuela, setEscuela] = useState('');
   const [materia, setMateria] = useState('');
+  const [orientacion, setOrientacion] = useState('');
   const [asignarHorario, setAsignarHorario] = useState(true);
   const [diaPrincipal, setDiaPrincipal] = useState('Lunes');
   const [horaPrincipal, setHoraPrincipal] = useState('08:00 a 09:20');
@@ -73,6 +75,7 @@ export default function ModalCrearCurso({
     setAnio('');
     setEscuela('');
     setMateria('');
+    setOrientacion('');
     setAsignarHorario(true);
     setDiaPrincipal('Lunes');
     setHoraPrincipal('08:00 a 09:20');
@@ -110,6 +113,7 @@ export default function ModalCrearCurso({
           escuela: escuela.trim(),
           anio: anioFinal,
           materia: materia.trim(),
+          ...(orientacion.trim() ? { orientacion: orientacion.trim() } : {}),
         }),
       });
 
@@ -163,7 +167,7 @@ export default function ModalCrearCurso({
             mc.sheet,
             isKeyboardVisible && {
               maxHeight: availableHeight,
-              paddingBottom: SPACING.md,
+              paddingBottom: SPACING.sm,
             },
           ]}
         >
@@ -223,6 +227,15 @@ export default function ModalCrearCurso({
                 value={materia}
                 onChangeText={setMateria}
                 autoCapitalize="words"
+              />
+              <AppInput
+                label="Orientación (opcional)"
+                iconName="compass-outline"
+                placeholder="Ej. Económica, Humanidades, etc."
+                value={orientacion}
+                onChangeText={setOrientacion}
+                autoCapitalize="words"
+                maxLength={80}
               />
             </View>
 

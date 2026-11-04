@@ -182,6 +182,7 @@ export default function ImportarAlumnosModal({ abierto, cursoId, onCerrar, onImp
               minHeight: Math.min(340, availableHeight),
               maxHeight: availableHeight,
               paddingVertical: SPACING.md,
+              paddingBottom: SPACING.sm,
             },
           ]}
         >
