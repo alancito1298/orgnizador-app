@@ -363,14 +363,14 @@ export default function CursosScreen() {
         >
           {/* Header (Fiel al web Cursos.tsx) */}
           <View style={s.header}>
-            <View style={{ flex: 1, paddingRight: SPACING.sm }}>
+            <View style={s.headerTextCol}>
               <Text style={s.title}>PANEL DE CURSOS Y AULAS ESCOLARES</Text>
               <Text style={s.subtitle}>
                 Administrá la asistencia, calificaciones y alumnos de tus materias.
               </Text>
             </View>
             <TouchableOpacity style={s.addBtn} onPress={() => setModalCrear(true)} activeOpacity={0.85}>
-              <Ionicons name="add" size={20} color="#fff" />
+              <Ionicons name="add" size={24} color="#fff" />
               <Text style={s.addBtnText}>Nuevo</Text>
             </TouchableOpacity>
           </View>
@@ -406,7 +406,7 @@ export default function CursosScreen() {
                 onPress={() => setModalCrear(true)}
                 activeOpacity={0.85}
               >
-                <Ionicons name="add" size={20} color={COLORS.accent} />
+                <Ionicons name="add" size={24} color={COLORS.accent} />
                 <Text style={s.btnAgregarBottomText}>AGREGAR NUEVO CURSO</Text>
               </TouchableOpacity>
             </View>
@@ -437,16 +437,52 @@ const s = StyleSheet.create({
   scroll: { flex:1 },
   content: { padding: SPACING.xl, paddingTop: SPACING.lg },
   centered: { paddingVertical: 60, alignItems:'center' },
-  header: { flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between', marginBottom: SPACING.xl },
-  title: { fontSize:19, fontWeight:'800', color: COLORS.accent, letterSpacing:-0.3, textTransform:'uppercase' },
-  subtitle: { fontSize:12, color: COLORS.secondary, fontWeight:'500', marginTop:4, lineHeight:17 },
-  addBtn: {
-    flexDirection:'row', alignItems:'center', gap:6,
-    backgroundColor: COLORS.accent, borderRadius: RADIUS.full,
-    paddingHorizontal: SPACING.lg, paddingVertical:10,
-    shadowColor: COLORS.accent, shadowOffset:{width:0,height:4}, shadowOpacity:0.3, shadowRadius:8, elevation:5,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    gap: 14,
   },
-  addBtnText: { fontSize:13, fontWeight:'800', color:'#fff', textTransform:'uppercase', letterSpacing:0.5 },
+  headerTextCol: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: COLORS.accent,
+    letterSpacing: -0.5,
+    textTransform: 'uppercase',
+    lineHeight: 34,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: COLORS.secondary,
+    fontWeight: '600',
+    marginTop: 6,
+    lineHeight: 22,
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.accent,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    shadowColor: COLORS.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  addBtnText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   lista: { gap: 2 },
   emptyBox: {
     alignItems:'center', gap: SPACING.sm, paddingVertical:60,
@@ -465,23 +501,23 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
     backgroundColor: '#fff',
     borderRadius: RADIUS.xl,
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: SPACING.lg,
-    marginTop: SPACING.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.18)',
+    marginTop: SPACING.md,
+    borderWidth: 1.5,
+    borderColor: 'rgba(124,58,237,0.22)',
     shadowColor: '#7c3aed',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   btnAgregarBottomText: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '900',
     color: COLORS.accent,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
