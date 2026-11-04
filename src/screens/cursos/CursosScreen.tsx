@@ -122,9 +122,6 @@ function CursoCard({
         {/* Info */}
         <View style={card.info}>
           <View style={card.topRow}>
-            <View style={card.anioBadge}>
-              <Text style={card.anioBadgeText}>{formatAnio(curso.anio)}</Text>
-            </View>
             <Text style={card.escuela} numberOfLines={1}>{curso.escuela}</Text>
           </View>
           <Text style={card.materia} numberOfLines={1}>{curso.materia}</Text>
