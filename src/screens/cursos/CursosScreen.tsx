@@ -224,7 +224,7 @@ const card = StyleSheet.create({
   anioNum: {
     color: '#fff',
     fontSize: 30,
-    fontWeight: '900',
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
   info: {
@@ -241,7 +241,7 @@ const card = StyleSheet.create({
     fontSize: 20,
     lineHeight: 25,
     color: '#7c3aed',
-    fontWeight: '800',
+    fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     flex: 1,
@@ -249,7 +249,7 @@ const card = StyleSheet.create({
   materia: {
     fontSize: 28,
     lineHeight: 34,
-    fontWeight: '900',
+    fontWeight: '600',
     color: '#111827',
     textTransform: 'uppercase',
     letterSpacing: 0.2,
@@ -269,7 +269,7 @@ const card = StyleSheet.create({
   orientacionText: {
     fontSize: 18,
     lineHeight: 23,
-    fontWeight: '700',
+    fontWeight: '500',
     color: COLORS.accent,
   },
   ingresarRow: {
@@ -282,7 +282,7 @@ const card = StyleSheet.create({
     fontSize: 18,
     lineHeight: 23,
     color: COLORS.accent,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   actionsCol: {
     alignItems: 'center',
