@@ -20,7 +20,7 @@ import { logError } from '../../utils/sentry';
  * lo valida sin cambios en /auth/google.
  */
 const GOOGLE_WEB_CLIENT_ID =
-  '973174699212-l3j5ng16i134rioq6nnli3r4l18ocots.apps.googleusercontent.com';
+  '868455775736-7th45kmgd6s9s06c0ssmiiktu74vloh4.apps.googleusercontent.com';
 
 // Carga diferida y segura: el módulo nativo sólo existe en compilaciones completas (no en Expo Go ni builds desactualizados).
 let GoogleSigninModule: typeof import('@react-native-google-signin/google-signin') | null = null;
