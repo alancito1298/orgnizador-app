@@ -2,7 +2,7 @@
   "expo": {
     "name": "Organizador Docente",
     "slug": "organizador-docente",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.organizadordocente.app",
-      "versionCode": 18,
+      "versionCode": 20,
       "adaptiveIcon": {
         "backgroundColor": "#7c3aed",
         "foregroundImage": "./assets/android-icon-foreground.png",
