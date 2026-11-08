@@ -9,8 +9,10 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiFetch } from '../../api/client';
 import AppButton from '../ui/AppButton';
 import { KeyboardModalContainer } from '../ui/KeyboardModalContainer';
@@ -52,6 +54,8 @@ export default function PasoCalificacionModal({
   onFinalizado,
 }: Props) {
   const { isKeyboardVisible, availableHeight } = useKeyboard();
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 32 : 20);
   const hoyStr = new Date().toISOString().split('T')[0];
   const [fecha, setFecha] = useState(hoyStr);
   const [tipo, setTipo] = useState<TipoEvaluacion>('trabajo_practico');
@@ -111,11 +115,11 @@ export default function PasoCalificacionModal({
         <View
           style={[
             s.sheet,
+            { paddingBottom: isKeyboardVisible ? SPACING.sm : bottomPadding },
             isKeyboardVisible && {
               maxHeight: availableHeight,
               paddingVertical: SPACING.md,
               gap: SPACING.sm,
-              paddingBottom: SPACING.sm,
             },
           ]}
         >

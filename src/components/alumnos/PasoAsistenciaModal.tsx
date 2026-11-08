@@ -15,6 +15,7 @@ import {
 
 const Text = (props: TextProps) => <RNText allowFontScaling={false} {...props} />;
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiFetch } from '../../api/client';
 import AppButton from '../ui/AppButton';
 import { KeyboardModalContainer } from '../ui/KeyboardModalContainer';
@@ -67,6 +68,8 @@ export default function PasoAsistenciaModal({
   const [fecha, setFecha] = useState(hoyStr);
   const [respuestas, setRespuestas] = useState<Record<number, EstadoAsistencia>>({});
   const [guardando, setGuardando] = useState(false);
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 32 : 16);
 
   // Inicializar todos los alumnos en 'presente' por defecto al abrir
   useEffect(() => {
@@ -167,7 +170,7 @@ export default function PasoAsistenciaModal({
   return (
     <Modal visible={abierto} transparent animationType="slide" onRequestClose={onCerrar}>
       <KeyboardModalContainer style={s.overlay}>
-        <View style={s.sheet}>
+        <View style={[s.sheet, { paddingBottom: bottomPadding }]}>
           {/* ── HEADER ── */}
           <View style={s.head}>
             <View style={s.headLeft}>

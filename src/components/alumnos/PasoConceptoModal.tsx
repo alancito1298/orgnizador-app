@@ -8,10 +8,12 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 
 const Text = (props: TextProps) => <RNText allowFontScaling={false} {...props} />;
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiFetch } from '../../api/client';
 import AppButton from '../ui/AppButton';
 import { COLORS, RADIUS, SPACING } from '../../theme';
@@ -51,6 +53,8 @@ export default function PasoConceptoModal({
 }: Props) {
   const [respuestas, setRespuestas] = useState<Record<number, string>>({});
   const [guardando, setGuardando] = useState(false);
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 32 : 20);
   const hoyStr = new Date().toISOString().split('T')[0];
 
   const handleSeleccionar = (inscId: number, estado: string) => {
@@ -96,7 +100,7 @@ export default function PasoConceptoModal({
   return (
     <Modal visible={abierto} transparent animationType="slide" onRequestClose={onCerrar}>
       <View style={s.overlay}>
-        <View style={s.sheet}>
+        <View style={[s.sheet, { paddingBottom: bottomPadding }]}>
           <View style={s.head}>
             <View style={s.headLeft}>
               <Text style={s.headEmoji}>😊</Text>

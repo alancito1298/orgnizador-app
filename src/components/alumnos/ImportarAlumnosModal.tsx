@@ -9,8 +9,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiFetch } from '../../api/client';
 import AppButton from '../ui/AppButton';
 import { KeyboardModalContainer } from '../ui/KeyboardModalContainer';
@@ -36,6 +38,8 @@ interface Props {
 
 export default function ImportarAlumnosModal({ abierto, cursoId, onCerrar, onImportados }: Props) {
   const { isKeyboardVisible, availableHeight } = useKeyboard();
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 32 : 20);
   const [textoPegado, setTextoPegado] = useState('');
   const [alumnosDetectados, setAlumnosDetectados] = useState<AlumnoImportado[]>([]);
   const [analizado, setAnalizado] = useState(false);
@@ -178,11 +182,11 @@ export default function ImportarAlumnosModal({ abierto, cursoId, onCerrar, onImp
         <View
           style={[
             s.sheet,
+            { paddingBottom: isKeyboardVisible ? SPACING.sm : bottomPadding },
             isKeyboardVisible && {
               minHeight: Math.min(340, availableHeight),
               maxHeight: availableHeight,
               paddingVertical: SPACING.md,
-              paddingBottom: SPACING.sm,
             },
           ]}
         >
