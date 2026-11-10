@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Animated,
   Linking,
+  NativeModules,
+  TurboModuleRegistry,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -13,12 +15,68 @@ import { useNavigation } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
 
 import { apiFetch } from '../../api/client';
-import { COLORS, RADIUS, SPACING, FONT_SIZE } from '../../theme';
 import { useKeyboard } from '../../hooks/useKeyboard';
 
 const DISMISS_KEY = 'organizador_ad_dismissed_session';
 
-// Promociones y anuncios educativos de respaldo (discretos y orientados a docentes)
+/**
+ * ID oficial de la unidad Banner en Google AdMob (Organizador Docente).
+ * App ID (configurado en app.json): ca-app-pub-3715321688716274~1485732126
+ */
+const ADMOB_BANNER_UNIT_ID = 'ca-app-pub-3715321688716274/2980657523';
+
+// Carga diferida y segura del módulo nativo de Google Mobile Ads
+// Evita crasheos en Expo Go o compilaciones previas que aún no incluyan el binario nativo
+let GoogleMobileAdsModule: typeof import('react-native-google-mobile-ads') | null = null;
+let sdkInitialized = false;
+
+function isNativeAdMobAvailable(): boolean {
+  try {
+    if (NativeModules && NativeModules.RNGoogleMobileAdsModule) {
+      return true;
+    }
+    if (TurboModuleRegistry && typeof TurboModuleRegistry.get === 'function') {
+      const mod = TurboModuleRegistry.get('RNGoogleMobileAdsModule');
+      if (mod) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function getAdMobModule() {
+  if (GoogleMobileAdsModule) {
+    return GoogleMobileAdsModule;
+  }
+
+  if (!isNativeAdMobAvailable()) {
+    return null;
+  }
+
+  try {
+    const mod = require('react-native-google-mobile-ads');
+    if (mod) {
+      if (!sdkInitialized && typeof mod.default === 'function') {
+        mod
+          .default()
+          .initialize()
+          .catch(() => {});
+        sdkInitialized = true;
+      }
+      GoogleMobileAdsModule = mod;
+      return GoogleMobileAdsModule;
+    }
+  } catch (e: any) {
+    console.warn('[AdMob] Módulo nativo no disponible en este entorno:', e?.message || e);
+    GoogleMobileAdsModule = null;
+    return null;
+  }
+
+  return null;
+}
+
+// Promociones educativas de respaldo (se muestran mientras carga AdMob o si aún está en revisión)
 const PROMO_ADS = [
   {
     id: 1,
@@ -50,7 +108,11 @@ export default function AdBannerMobile() {
 
   const [visible, setVisible] = useState(false);
   const [adIndex, setAdIndex] = useState(0);
+  const [admobLoaded, setAdmobLoaded] = useState(false);
+  const [admobFailed, setAdmobFailed] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(1));
+
+  const admobMod = getAdMobModule();
 
   useEffect(() => {
     let isMounted = true;
@@ -77,7 +139,7 @@ export default function AdBannerMobile() {
         if (isMounted) {
           setVisible(true);
         }
-      } catch (err) {
+      } catch {
         // Si hay error de red o no está logueado, mantener visible discretamente
         if (isMounted) setVisible(true);
       }
@@ -85,7 +147,7 @@ export default function AdBannerMobile() {
 
     checkAdsEligibility();
 
-    // Rotación suave del banner cada 10 segundos
+    // Rotación suave del banner de respaldo cada 10 segundos
     const timer = setInterval(() => {
       setAdIndex((prev) => (prev + 1) % PROMO_ADS.length);
     }, 10000);
@@ -124,6 +186,14 @@ export default function AdBannerMobile() {
   if (!visible || isKeyboardVisible) return null;
 
   const current = PROMO_ADS[adIndex];
+  const BannerAdComponent = admobMod?.BannerAd;
+  const BannerAdSizeEnum = admobMod?.BannerAdSize;
+  const TestIdsEnum = admobMod?.TestIds;
+
+  const unitId =
+    __DEV__ && TestIdsEnum?.BANNER ? TestIdsEnum.BANNER : ADMOB_BANNER_UNIT_ID;
+
+  const canRenderAdMob = Boolean(BannerAdComponent && BannerAdSizeEnum && !admobFailed);
 
   return (
     <Animated.View
@@ -144,25 +214,45 @@ export default function AdBannerMobile() {
       ]}
       pointerEvents="box-none"
     >
-      <View style={styles.bannerContainer}>
-        {/* Contenido principal del anuncio */}
-        <TouchableOpacity
-          style={styles.contentTouch}
-          activeOpacity={0.85}
-          onPress={() => handleOpenPromo(current.url)}
-        >
-          <View style={styles.badgeWrapper}>
-            <Text style={styles.badgeText}>{current.badge}</Text>
+      <View style={[styles.bannerContainer, admobLoaded && styles.bannerContainerAdMob]}>
+        {/* Anuncio nativo de Google AdMob (cuando el binario nativo está compilado) */}
+        {canRenderAdMob && BannerAdComponent && BannerAdSizeEnum && (
+          <View style={[styles.admobSlot, !admobLoaded && styles.hiddenAdSlot]}>
+            <BannerAdComponent
+              unitId={unitId}
+              size={BannerAdSizeEnum.BANNER}
+              onAdLoaded={() => {
+                setAdmobLoaded(true);
+                setAdmobFailed(false);
+              }}
+              onAdFailedToLoad={() => {
+                setAdmobLoaded(false);
+                setAdmobFailed(true);
+              }}
+            />
           </View>
-          <View style={styles.textContainer}>
-            <Text style={styles.title} numberOfLines={1}>
-              {current.titulo}
-            </Text>
-            <Text style={styles.subtitulo} numberOfLines={1}>
-              {current.subtitulo}
-            </Text>
-          </View>
-        </TouchableOpacity>
+        )}
+
+        {/* Respaldo educativo mientras carga AdMob o si la cuenta aún está en revisión */}
+        {!admobLoaded && (
+          <TouchableOpacity
+            style={styles.contentTouch}
+            activeOpacity={0.85}
+            onPress={() => handleOpenPromo(current.url)}
+          >
+            <View style={styles.badgeWrapper}>
+              <Text style={styles.badgeText}>{current.badge}</Text>
+            </View>
+            <View style={styles.textContainer}>
+              <Text style={styles.title} numberOfLines={1}>
+                {current.titulo}
+              </Text>
+              <Text style={styles.subtitulo} numberOfLines={1}>
+                {current.subtitulo}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Acciones: Quitar Ads (Premium) y Cerrar (X) */}
         <View style={styles.actionsContainer}>
@@ -200,7 +290,7 @@ const styles = StyleSheet.create({
   bannerContainer: {
     width: '100%',
     maxWidth: 520,
-    height: 48,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -215,6 +305,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 6,
+  },
+  bannerContainerAdMob: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  admobSlot: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  hiddenAdSlot: {
+    width: 0,
+    height: 0,
+    opacity: 0,
+    position: 'absolute',
   },
   contentTouch: {
     flex: 1,
