@@ -29,6 +29,7 @@ const ADMOB_BANNER_UNIT_ID = 'ca-app-pub-3715321688716274/2980657523';
 // Evita crasheos en Expo Go o compilaciones previas que aún no incluyan el binario nativo
 let GoogleMobileAdsModule: typeof import('react-native-google-mobile-ads') | null = null;
 let sdkInitialized = false;
+let checkAttempted = false;
 
 function isNativeAdMobAvailable(): boolean {
   try {
@@ -50,30 +51,61 @@ function getAdMobModule() {
     return GoogleMobileAdsModule;
   }
 
+  if (checkAttempted) {
+    return GoogleMobileAdsModule;
+  }
+  checkAttempted = true;
+
   if (!isNativeAdMobAvailable()) {
     return null;
   }
 
   try {
     const mod = require('react-native-google-mobile-ads');
-    if (mod) {
-      if (!sdkInitialized && typeof mod.default === 'function') {
-        mod
-          .default()
-          .initialize()
-          .catch(() => {});
-        sdkInitialized = true;
-      }
+    if (mod && mod.BannerAd && mod.BannerAdSize) {
       GoogleMobileAdsModule = mod;
       return GoogleMobileAdsModule;
     }
   } catch (e: any) {
-    console.warn('[AdMob] Módulo nativo no disponible en este entorno:', e?.message || e);
+    console.warn('[AdMob] Módulo nativo no disponible o error al requerir:', e?.message || e);
     GoogleMobileAdsModule = null;
     return null;
   }
 
   return null;
+}
+
+interface ErrorBoundaryProps {
+  fallback: React.ReactNode;
+  children: React.ReactNode;
+  onError?: () => void;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class AdBannerErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any) {
+    console.warn('[AdBanner] Error en componente de anuncio:', error);
+    this.props.onError?.();
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
 }
 
 // Promociones educativas de respaldo (se muestran mientras carga AdMob o si aún está en revisión)
@@ -113,6 +145,24 @@ export default function AdBannerMobile() {
   const [fadeAnim] = useState(new Animated.Value(1));
 
   const admobMod = getAdMobModule();
+
+  useEffect(() => {
+    if (admobMod && !sdkInitialized && typeof admobMod.default === 'function') {
+      try {
+        admobMod
+          .default()
+          .initialize()
+          .then(() => {
+            sdkInitialized = true;
+          })
+          .catch((err: any) => {
+            console.warn('[AdMob] initialize rejected:', err);
+          });
+      } catch (e) {
+        console.warn('[AdMob] initialize threw error:', e);
+      }
+    }
+  }, [admobMod]);
 
   useEffect(() => {
     let isMounted = true;
@@ -217,20 +267,28 @@ export default function AdBannerMobile() {
       <View style={[styles.bannerContainer, admobLoaded && styles.bannerContainerAdMob]}>
         {/* Anuncio nativo de Google AdMob (cuando el binario nativo está compilado) */}
         {canRenderAdMob && BannerAdComponent && BannerAdSizeEnum && (
-          <View style={[styles.admobSlot, !admobLoaded && styles.hiddenAdSlot]}>
-            <BannerAdComponent
-              unitId={unitId}
-              size={BannerAdSizeEnum.BANNER}
-              onAdLoaded={() => {
-                setAdmobLoaded(true);
-                setAdmobFailed(false);
-              }}
-              onAdFailedToLoad={() => {
-                setAdmobLoaded(false);
-                setAdmobFailed(true);
-              }}
-            />
-          </View>
+          <AdBannerErrorBoundary
+            fallback={null}
+            onError={() => {
+              setAdmobLoaded(false);
+              setAdmobFailed(true);
+            }}
+          >
+            <View style={[styles.admobSlot, !admobLoaded && styles.hiddenAdSlot]}>
+              <BannerAdComponent
+                unitId={unitId}
+                size={BannerAdSizeEnum.BANNER}
+                onAdLoaded={() => {
+                  setAdmobLoaded(true);
+                  setAdmobFailed(false);
+                }}
+                onAdFailedToLoad={() => {
+                  setAdmobLoaded(false);
+                  setAdmobFailed(true);
+                }}
+              />
+            </View>
+          </AdBannerErrorBoundary>
         )}
 
         {/* Respaldo educativo mientras carga AdMob o si la cuenta aún está en revisión */}
