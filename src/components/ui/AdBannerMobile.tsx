@@ -291,47 +291,49 @@ export default function AdBannerMobile() {
           </AdBannerErrorBoundary>
         )}
 
-        {/* Respaldo educativo mientras carga AdMob o si la cuenta aún está en revisión */}
+        {/* Respaldo educativo y acciones (solo cuando NO hay anuncio real de AdMob visible) */}
         {!admobLoaded && (
-          <TouchableOpacity
-            style={styles.contentTouch}
-            activeOpacity={0.85}
-            onPress={() => handleOpenPromo(current.url)}
-          >
-            <View style={styles.badgeWrapper}>
-              <Text style={styles.badgeText}>{current.badge}</Text>
+          <>
+            <TouchableOpacity
+              style={styles.contentTouch}
+              activeOpacity={0.85}
+              onPress={() => handleOpenPromo(current.url)}
+            >
+              <View style={styles.badgeWrapper}>
+                <Text style={styles.badgeText}>{current.badge}</Text>
+              </View>
+              <View style={styles.textContainer}>
+                <Text style={styles.title} numberOfLines={1}>
+                  {current.titulo}
+                </Text>
+                <Text style={styles.subtitulo} numberOfLines={1}>
+                  {current.subtitulo}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Acciones: Quitar Ads (Premium) y Cerrar (X) */}
+            <View style={styles.actionsContainer}>
+              <TouchableOpacity
+                style={styles.removeAdsBtn}
+                activeOpacity={0.8}
+                onPress={handleGoToPremium}
+              >
+                <MaterialCommunityIcons name="crown" size={13} color="#fbbf24" />
+                <Text style={styles.removeAdsText}>PRO</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.closeBtn}
+                activeOpacity={0.7}
+                onPress={handleDismiss}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={15} color="#cbd5e1" />
+              </TouchableOpacity>
             </View>
-            <View style={styles.textContainer}>
-              <Text style={styles.title} numberOfLines={1}>
-                {current.titulo}
-              </Text>
-              <Text style={styles.subtitulo} numberOfLines={1}>
-                {current.subtitulo}
-              </Text>
-            </View>
-          </TouchableOpacity>
+          </>
         )}
-
-        {/* Acciones: Quitar Ads (Premium) y Cerrar (X) */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={styles.removeAdsBtn}
-            activeOpacity={0.8}
-            onPress={handleGoToPremium}
-          >
-            <MaterialCommunityIcons name="crown" size={13} color="#fbbf24" />
-            <Text style={styles.removeAdsText}>PRO</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.closeBtn}
-            activeOpacity={0.7}
-            onPress={handleDismiss}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="close" size={15} color="#cbd5e1" />
-          </TouchableOpacity>
-        </View>
       </View>
     </Animated.View>
   );
